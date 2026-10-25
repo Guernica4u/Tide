@@ -8,8 +8,7 @@ WebAssembly) over a [Wisp](https://github.com/MercuryWorkshop/wisp-protocol)
 WebSocket tunnel, rewrites them and shows them in a sandboxed frame. It needs no
 service worker.
 
-Live at **https://tide.guernica4u.workers.dev** (also https://study.chalkbored.win,
-which school filters block along with all of .win), where ChalkBored's Chalk TV and
+Live at **https://tide.guernica4u.workers.dev**, where ChalkBored's Chalk TV and
 Chalk Browser load it.
 
 ## What Tide changes from GUST
@@ -20,11 +19,8 @@ Chalk Browser load it.
   from the pickers; Bing and Google search. Firefox is the default skin and
   DuckDuckGo the default search.
 - One fixed storage namespace (`tide:`), since Tide is hosted at one address.
-- **ChalkBored's server.** Opened as `https://study.chalkbored.win/#tide={"key":"…"}`,
-  Tide uses `wss://tide.chalkbored.win/wisp/<key>/` and nothing else: no public
-  relays, no fallback, and the key is kept in memory only (never saved). The
-  address is removed from the URL bar as soon as it is read. Opened without a
-  key, Tide uses public Wisp relays the way GUST does.
+- Always runs on GUST's public Wisp relays. It never takes a private server
+  address or a key.
 - **TV mode** for Chalk TV: `"ui":"tv"` hides tabs, the address bar and bookmarks,
   `"open":"<site>"` shows that site first, and the ChalkBored page around Tide can
   send `{tide:"go",url}`, `{tide:"back"}` and `{tide:"reload"}` (accepted only from
