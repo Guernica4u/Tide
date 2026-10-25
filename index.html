@@ -5753,6 +5753,12 @@
     </style>
     <!-- Tide: Tide Lite settings. Seeds each setting only when it isn't set yet,
          so changes made in Settings stick, and hides the settings Lite locks. -->
+    <style id="tide-tv-css">
+        /* Chalk TV mode: Chalk TV has its own bar, so no tabs, address bar or bookmarks */
+        html.tide-tv .titlebar, html.tide-tv .navbar, html.tide-tv #bookmarksWrap { display: none !important; }
+        html.tide-tv main { padding: 0 !important; gap: 0 !important; }
+        html.tide-tv .view { border: none !important; border-radius: 0 !important; box-shadow: none !important; }
+    </style>
     <style id="tide-lite-css">
         #settingsWispInput,#settingsWispSave,#settingsWispReset { display: none !important; }
         #settingsWispStatus { display: none !important; }
@@ -9643,20 +9649,24 @@ window._libcurlReady = true;
 
             // ── Tide: ChalkBored's own tide server ────────────────────────────
             // Chalk TV and Chalk Browser open Tide as  https://<tide>/#tide=<json>
-            // with {"key":"…"}. The key only ever builds an address on a server in
+            // with {"key":"…"}, plus "open":"<site>" to show a site first and
+            // "ui":"tv" for Chalk TV (one site: no tabs or address bar). The key only ever builds an address on a server in
             // TIDE_SERVERS, stays in memory (it is never saved), and while it is set
             // Tide uses that server alone: no public relays and no fallback.
             // Without it, Tide runs on public relays like Tide does.
             const TIDE_SERVERS = ['tide.chalkbored.win'];
             window.__TIDE_SHELL__ = true; // frames inside Tide look for this to find it
             const TIDE = (function () {
-                const t = { wisp: null };
+                const t = { wisp: null, open: null, ui: null };
                 const m = /[#&]tide=([^&]*)/.exec(location.hash);
                 if (!m) return t;
                 try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
                 let cfg;
                 try { cfg = JSON.parse(decodeURIComponent(m[1])); } catch (e) { return t; }
-                if (!cfg || typeof cfg.key !== 'string' || !cfg.key || cfg.key.length > 256) return t;
+                if (!cfg) return t;
+                if (typeof cfg.open === 'string' && /^https?:\/\//i.test(cfg.open)) t.open = cfg.open;
+                if (cfg.ui === 'tv') { t.ui = 'tv'; document.documentElement.classList.add('tide-tv'); }
+                if (typeof cfg.key !== 'string' || !cfg.key || cfg.key.length > 256) return t;
                 // A copy running on this computer may name a local test server instead
                 const local = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
                 if (local && typeof cfg.server === 'string' && /^[\w.-]+(:\d+)?$/.test(cfg.server))
@@ -10686,6 +10696,7 @@ window._libcurlReady = true;
             const TAB_CACHE_KEY = "gust:tabs:v1";
 
             function saveTabs() {
+                if (TIDE.ui === 'tv') return;
                 try {
                     const tabsToSave = tabs.map(t => ({
                         id: t.id,
@@ -10705,6 +10716,7 @@ window._libcurlReady = true;
             }
 
             function loadTabs() {
+                if (TIDE.ui === 'tv') return false;
                 try {
                     const saved = ls.getItem(TAB_CACHE_KEY);
                     if (saved) {
@@ -19102,6 +19114,22 @@ _VIEWER_DL_JS +
                 }
             });
 
+            // ── Tide: commands from the ChalkBored page around Tide ──────────
+            // Only the page directly around Tide, and only from ChalkBored, may
+            // send these: {tide:"go", url}, {tide:"back"}, {tide:"reload"}.
+            const TIDE_PARENTS = ['https://chalkbored.win', 'https://chalkbored-for-students.vercel.app'];
+            window.addEventListener('message', ev => {
+                if (window.parent === window || ev.source !== window.parent) return;
+                const localParent = /^(127\.0\.0\.1|localhost)$/.test(location.hostname)
+                    && /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(ev.origin);
+                if (!TIDE_PARENTS.includes(ev.origin) && !localParent) return;
+                const d = ev.data;
+                if (!d || typeof d.tide !== 'string') return;
+                if (d.tide === 'go' && typeof d.url === 'string' && /^https?:\/\//i.test(d.url)) go(d.url);
+                else if (d.tide === 'back') $("back").click();
+                else if (d.tide === 'reload') $("reload").click();
+            });
+
             $("back").onclick = () => {
                 if (histIdx > 0) {
                     histIdx--;
@@ -22213,6 +22241,7 @@ _VIEWER_DL_JS +
                 overlay.classList.remove('splash');
                 _libcurlInitDone = true;
                 _maybeStartTutorial();
+                if (TIDE.open) go(TIDE.open);
             };
             // Re-enable the welcome tour so it appears automatically after the browser is ready.
             _tutorialWaiting = true;

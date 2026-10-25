@@ -24,6 +24,10 @@ Chalk Browser load it.
   relays, no fallback, and the key is kept in memory only (never saved). The
   address is removed from the URL bar as soon as it is read. Opened without a
   key, Tide uses public Wisp relays the way GUST does.
+- **TV mode** for Chalk TV: `"ui":"tv"` hides tabs, the address bar and bookmarks,
+  `"open":"<site>"` shows that site first, and the ChalkBored page around Tide can
+  send `{tide:"go",url}`, `{tide:"back"}` and `{tide:"reload"}` (accepted only from
+  ChalkBored). TV mode keeps its own tab, apart from the normal one.
 - Works while framed inside another page (Chalk TV sits inside ChalkBored's
   Notebook): pages find Tide's window by a marker instead of `window.top`.
 - `_headers` lets only ChalkBored frame Tide; `wrangler.jsonc` serves the repo
