@@ -5800,8 +5800,11 @@
         html.tide-mono #settingsPage, html.tide-mono #newtab, html.tide-mono .find-bar { filter: grayscale(1); }
         html.tide-mono body, html.tide-mono .app, html.tide-mono main { background: #000 !important; }
         html.tide-mono .view { border-color: #2a2a2a !important; }
-        /* its new tab page is just the picture: no search box, no shortcuts */
-        html.tide-mono #newtab .fntp-search, html.tide-mono #newtab .fntp-shortcuts { display: none !important; }
+        /* its new tab page is just the picture: no shortcuts either */
+        html.tide-mono #newtab .fntp-shortcuts { display: none !important; }
+        /* no search box on the new tab page (it did not work); the address bar searches */
+        #newtab .fntp-search { display: none !important; }
+        #newtab .fntp-shortcuts { margin-top: 200px; }
         .skin-prev.sk-tide { filter: grayscale(1) brightness(0.8); }
     </style>
     <style id="tide-lite-css">
