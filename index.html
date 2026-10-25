@@ -5763,6 +5763,33 @@
         /* Opera GX's Easy setup panel waits just off-screen and its shadow spills in */
         #gxEasy:not(.open) { display: none !important; }
     </style>
+    <style id="tide-trim-css">
+        /* Settings that don't work in Tide are gone: only Skins, Search and About stay */
+        .settings-nav-item[data-section="connection"], .settings-section[data-section="connection"],
+        .settings-nav-item[data-section="privacy"], .settings-section[data-section="privacy"],
+        .settings-nav-item[data-section="cache"], .settings-section[data-section="cache"],
+        .settings-nav-item[data-section="filesandmedia"], .settings-section[data-section="filesandmedia"],
+        .settings-nav-item[data-section="appearance"], .settings-section[data-section="appearance"],
+        .settings-nav-item[data-section="homescreen"], .settings-section[data-section="homescreen"],
+        .settings-nav-item[data-section="shortcuts"], .settings-section[data-section="shortcuts"],
+        .settings-nav-item[data-section="language"], .settings-section[data-section="language"],
+        .settings-nav-item[data-section="fallback"], .settings-section[data-section="fallback"],
+        .settings-nav-item[data-section="tutorial"], .settings-section[data-section="tutorial"],
+        .settings-nav-item[data-section="tutorial-page"], .settings-section[data-section="tutorial-page"] { display: none !important; }
+        /* Skins: Firefox and Zen only (no Tide, Tide+, Chrome or Brave) */
+        .skin-tile[data-skinval]:not([data-skinval="firefox"]):not([data-skinval="zen"]),
+        #plusStudioCard, #plusModsCard, #plusColorCard, #plusShapeCard,
+        .settings-card:has(#skinUASwitch) { display: none !important; }
+        /* Search: just the engine (no spellcheck, no favicon switch) */
+        .settings-card:has(#settingsSpellSwitch), .settings-card:has(#faviconTideSwitch) { display: none !important; }
+        /* one shield in the address bar (the green one), and no signing in */
+        #skinShieldsBtn, #skinAvatarBtn { display: none !important; }
+        /* the new tab page: two hands reaching out, drawn in characters */
+        #newtab, #newtab .fntp, #newtab .skin-ntp {
+            background: #000 url("background.webp") center / cover no-repeat !important;
+        }
+        #newtab .fntp-bg, #newtab .nt-bg { display: none !important; }
+    </style>
     <style id="tide-lite-css">
         #settingsWispInput,#settingsWispSave,#settingsWispReset { display: none !important; }
         #settingsWispStatus { display: none !important; }
@@ -5830,6 +5857,10 @@
             "gust:fallback:enabled": "0"
         };
         var inst = 'tide'; // same fixed storage namespace as the main script
+        // spellcheck is always off (its setting is gone)
+        ['gust:spellcheck:v1', inst + ':gust:spellcheck:v1'].forEach(function (key) {
+            try { localStorage.setItem(key, 'false'); } catch (e) {}
+        });
         Object.keys(defaults).forEach(function (k) {
             [k, inst ? inst + ':' + k : null].forEach(function (key) {
                 if (!key) return;
@@ -6963,7 +6994,6 @@
                                                 <div class="skin-tile-name"><i class="fas fa-wand-magic-sparkles" style="color:#c9a2ff;"></i><span>Tide+</span><span class="skin-tile-check"><i class="fas fa-check"></i></span></div>
                                             </button>
                                         </div>
-                                        <div class="settings-hint" style="margin-top:12px;">*A note on Tide+. By default, Tide+ is identical to regular Tide. However, Tide+ allows you to hand pick tab styles, sidebars, home screens, and more from whichever skin does it best, then paint the whole thing in custom colors. Tune it below.</div>
                                     </div>
                                 </div>
 
@@ -19106,6 +19136,25 @@ _VIEWER_DL_JS +
                 }
             });
 
+            // ── Tide: nothing opens outside Tide ─────────────────────────────
+            // New windows, profiles and outside links in Tide's own menus and pages
+            // open as Tide tabs (in Chalk TV, in the same tab) instead of real tabs.
+            window.open = function (url) {
+                let u = '';
+                try { u = url ? new URL(String(url), location.href).href : ''; } catch (e) {}
+                if (!/^https?:/i.test(u) || u.split('#')[0] === location.href.split('#')[0]) u = '';
+                if (TIDE.ui === 'tv') { if (u) go(u); }
+                else if (u) createTab(u);
+                else createTab();
+                return null;
+            };
+            document.addEventListener('click', e => {
+                const a = e.target && e.target.closest && e.target.closest('a[target="_blank"]');
+                if (!a || !/^https?:/i.test(a.href)) return;
+                e.preventDefault();
+                window.open(a.href);
+            }, true);
+
             // ── Tide: commands from the ChalkBored page around Tide ──────────
             // Only the page directly around Tide, and only from ChalkBored, may
             // send these: {tide:"go", url}, {tide:"back"}, {tide:"reload"}.
@@ -22481,7 +22530,7 @@ _VIEWER_DL_JS +
 
             // ── Browser skins: mask Tide as Chrome / Opera GX / Brave / Firefox ──
             (() => {
-                const SKINS = ['chrome', 'brave', 'firefox', 'zen', 'plus'];
+                const SKINS = ['firefox', 'zen'];
                 const KEY = 'gust:skin:v1', KEY_UA = 'gust:skin:matchua:v1', KEY_SFX = 'gust:skin:sfx:v1', KEY_PIN = 'gust:skin:extpin:v1';
                 // Brave ships Chrome's exact UA string, so chrome/brave = null = default UA
                 const SKIN_UA = {
@@ -22489,9 +22538,9 @@ _VIEWER_DL_JS +
                     firefox: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0',
                     zen: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0'
                 };
-                // Tide: Firefox is the default skin; a saved Opera GX choice falls back to it
+                // Tide: only Firefox (the default) and Zen; any other saved skin falls back to Firefox
                 let current = ls.getItem(KEY);
-                if (current === null || current === 'operagx') current = 'firefox';
+                if (!SKINS.includes(current)) current = 'firefox';
                 if (!SKINS.includes(current)) current = '';
                 let matchUA = ls.getItem(KEY_UA) !== 'false';
                 let sfxOn = ls.getItem(KEY_SFX) !== 'false';
@@ -25677,7 +25726,7 @@ _VIEWER_DL_JS +
                 }
                 function applySkin(name, opts) {
                     opts = opts || {};
-                    current = SKINS.includes(name) ? name : '';
+                    current = SKINS.includes(name) ? name : 'firefox';
                     const root = document.documentElement;
                     if (current) root.setAttribute('data-skin', current);
                     else root.removeAttribute('data-skin');
