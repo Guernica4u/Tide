@@ -5764,8 +5764,7 @@
         #gxEasy:not(.open) { display: none !important; }
     </style>
     <style id="tide-trim-css">
-        /* Settings that don't work in Tide are gone: only Skins, Search and About stay */
-        .settings-nav-item[data-section="connection"], .settings-section[data-section="connection"],
+        /* Settings that don't work in Tide are gone: Skins, Servers, Search, Fallback and About stay */
         .settings-nav-item[data-section="privacy"], .settings-section[data-section="privacy"],
         .settings-nav-item[data-section="cache"], .settings-section[data-section="cache"],
         .settings-nav-item[data-section="filesandmedia"], .settings-section[data-section="filesandmedia"],
@@ -5773,7 +5772,6 @@
         .settings-nav-item[data-section="homescreen"], .settings-section[data-section="homescreen"],
         .settings-nav-item[data-section="shortcuts"], .settings-section[data-section="shortcuts"],
         .settings-nav-item[data-section="language"], .settings-section[data-section="language"],
-        .settings-nav-item[data-section="fallback"], .settings-section[data-section="fallback"],
         .settings-nav-item[data-section="tutorial"], .settings-section[data-section="tutorial"],
         .settings-nav-item[data-section="tutorial-page"], .settings-section[data-section="tutorial-page"] { display: none !important; }
         /* Skins: Firefox and Zen only (no Tide, Tide+, Chrome or Brave) */
@@ -5792,6 +5790,12 @@
         }
         #newtab .fntp-bg, #newtab .nt-bg { display: none !important; }
     </style>
+    <style id="tide-loading-css">
+        /* the loading screen, at start-up while Tide reaches the servers and while a page loads: black and white */
+        #overlay { filter: grayscale(1); }
+        #overlay.splash { background: rgba(0, 0, 0, .9) !important; }
+        #overlay .spinner { border-color: rgba(255, 255, 255, .12) !important; border-top-color: #fff !important; }
+    </style>
     <style id="tide-mono-css">
         /* The Tide skin: Firefox's layout in black and white (sites keep their colours) */
         html.tide-mono .titlebar, html.tide-mono .navbar, html.tide-mono #bookmarksWrap { background: #000 !important; border-color: #2a2a2a !important; }
@@ -5808,15 +5812,6 @@
         .skin-prev.sk-tide { filter: grayscale(1) brightness(0.8); }
     </style>
     <style id="tide-lite-css">
-        #settingsWispInput,#settingsWispSave,#settingsWispReset { display: none !important; }
-        #settingsWispStatus { display: none !important; }
-        #fallbackEnabledSwitch { display: none !important; }
-        #settingsFallbackWispInput,#settingsFallbackWispSave,#settingsFallbackWispReset { display: none !important; }
-        #settingsFallbackWispStatus { display: none !important; }
-        #mainRetryMinus,#mainRetryVal,#mainRetryPlus { display: none !important; }
-        #fallbackRetryMinus,#fallbackRetryVal,#fallbackRetryPlus { display: none !important; }
-        #fallbackDelayMinus,#fallbackDelayVal,#fallbackDelayPlus { display: none !important; }
-        #fallback5xxSwitch,#fallbackTimeoutSwitch,#fallbackDnsSwitch { display: none !important; }
         #customSearchCard { display: none !important; }
         #settingsBlockSwitch { display: none !important; }
         #blockToggle { display: none !important; }
@@ -6540,7 +6535,7 @@
                                 <button class="settings-nav-item active" data-section="skins"><i
                                         class="fas fa-mask"></i><span>Skins</span></button>
                                 <button class="settings-nav-item" data-section="connection"><i
-                                        class="fas fa-network-wired"></i><span>Connection</span></button>
+                                        class="fas fa-network-wired"></i><span>Servers</span></button>
                                 <button class="settings-nav-item" data-section="search"><i
                                         class="fas fa-magnifying-glass"></i><span>Search</span></button>
                                 <button class="settings-nav-item" data-section="privacy"><i
@@ -6575,6 +6570,23 @@
 
                             
                             <div class="settings-section" data-section="connection">
+                                <div class="settings-card" id="tideServerCard">
+                                    <div class="settings-card-head"><i class="fas fa-signal"></i> Current Server</div>
+                                    <div class="settings-card-body">
+                                        <div class="settings-switch-row">
+                                            <div>
+                                                <div class="settings-switch-label" id="tideSrvHost">…</div>
+                                                <div class="settings-hint" id="tideSrvState">Press Test to check how fast it answers.</div>
+                                            </div>
+                                            <div style="display:flex; gap:8px; flex-shrink:0;">
+                                                <button class="settings-btn-icon" id="tideSrvTest" title="Test this server"><i class="fas fa-stopwatch"></i></button>
+                                                <button class="settings-btn-icon" id="tideSrvReconnect" title="Reconnect"><i class="fas fa-plug"></i></button>
+                                                <button class="settings-btn-icon" id="tideSrvFastest" title="Test every server and use the fastest"><i class="fas fa-bolt"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="settings-hint">Click a server in the list below to switch to it.</div>
+                                    </div>
+                                </div>
                                 <div class="settings-card">
                                     <div class="settings-card-head"><i class="fas fa-network-wired"></i> WISP Server
                                     </div>
@@ -19878,7 +19890,7 @@ _VIEWER_DL_JS +
                     const settingsUrl = `tide://settings/${section}`;
                     urlInput.value = settingsUrl;
                     pageUrl = settingsUrl;
-                    setTabTitle(`Settings - ${section.charAt(0).toUpperCase() + section.slice(1)}`);
+                    setTabTitle(`Settings - ${section === 'connection' ? 'Servers' : section.charAt(0).toUpperCase() + section.slice(1)}`);
                     updateTabUrl(settingsUrl);
 
                     hist = hist.slice(0, histIdx + 1);
@@ -20312,7 +20324,7 @@ _VIEWER_DL_JS +
                     updateNav();
                 }
                 updateTabUrl(settingsUrl);
-                setTabTitle(`Settings - ${section.charAt(0).toUpperCase() + section.slice(1)}`);
+                setTabTitle(`Settings - ${section === 'connection' ? 'Servers' : section.charAt(0).toUpperCase() + section.slice(1)}`);
                 setStatus("idle", "Ready");
 
                 document.querySelectorAll('.settings-nav-item').forEach(b => b.classList.remove('active'));
@@ -20541,7 +20553,7 @@ _VIEWER_DL_JS +
                         else if (h.latency < 800) { dotColor = 'var(--warn)'; label = Math.round(h.latency) + 'ms' + suffix; }
                         else { dotColor = 'var(--warn)'; label = Math.round(h.latency) + 'ms (slow)' + suffix; }
                     }
-                    return `<div style="display:flex;align-items:center;gap:8px;font-size:12px;font-family:var(--mono);color:var(--tx2);padding:4px 6px;border-radius:4px;background:rgba(255,255,255,0.03);">
+                    return `<div data-wisp="${url}" title="Use this server" style="cursor:pointer;${url === WISP ? 'outline:1px solid var(--tx2);' : ''}display:flex;align-items:center;gap:8px;font-size:12px;font-family:var(--mono);color:var(--tx2);padding:4px 6px;border-radius:4px;background:rgba(255,255,255,0.03);">
                         <span style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;"></span>
                         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${host}</span>
                         <span style="color:var(--tx3);">${label}</span>
@@ -20657,6 +20669,47 @@ _VIEWER_DL_JS +
                         }
                     };
                 }
+
+                // ── Tide: current server card, and switching from the list ──
+                const srvHost = $("tideSrvHost"), srvState = $("tideSrvState");
+                const hostOfWisp = u => String(u || '').replace(/^wss?:\/\//, '').split('/')[0];
+                function paintServer(note) {
+                    if (srvHost) srvHost.textContent = hostOfWisp(WISP) || 'none';
+                    if (srvState && note) srvState.textContent = note;
+                }
+                async function useServer(url, note) {
+                    ls.setItem('gust:wisp:v1', url);
+                    if (wispInput) wispInput.value = url;
+                    paintServer('Switching…');
+                    await applyWispUrl(url);
+                    paintServer(note || 'Switched. Press Test to check it.');
+                    renderWispPoolList();
+                }
+                paintServer();
+                const srvTest = $("tideSrvTest"), srvReconnect = $("tideSrvReconnect"), srvFastest = $("tideSrvFastest");
+                if (srvTest) srvTest.onclick = async () => {
+                    paintServer('Testing…');
+                    const ms = await probeWispLatency(WISP, 6000);
+                    paintServer(ms == null ? 'No answer. Try another server below, or Use fastest.' : 'Answers in ' + Math.round(ms) + ' ms.');
+                };
+                if (srvReconnect) srvReconnect.onclick = async () => {
+                    paintServer('Reconnecting…');
+                    await applyWispUrl(WISP);
+                    paintServer('Reconnected.');
+                };
+                if (srvFastest) srvFastest.onclick = async () => {
+                    paintServer('Testing every server… (takes a few seconds)');
+                    await benchmarkWispPool();
+                    const best = getWispPool().filter(u => wispHealth[u] && wispHealth[u].healthy && wispHealth[u].latency != null)
+                        .sort((a, b) => wispHealth[a].latency - wispHealth[b].latency)[0];
+                    if (!best) { paintServer('No server answered. Check the internet connection.'); return; }
+                    await useServer(best, 'Using the fastest: ' + Math.round(wispHealth[best].latency) + ' ms.');
+                };
+                const poolListEl = $("settingsPoolList");
+                if (poolListEl) poolListEl.addEventListener('click', e => {
+                    const row = e.target.closest && e.target.closest('[data-wisp]');
+                    if (row && row.dataset.wisp && row.dataset.wisp !== WISP) useServer(row.dataset.wisp);
+                });
 
                 // ── WISP pool status / benchmark ────────────────────────
                 const poolBenchmarkBtn = $("settingsPoolBenchmarkBtn");
@@ -22563,8 +22616,9 @@ _VIEWER_DL_JS +
                     firefox: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0',
                     zen: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0'
                 };
-                // Tide: only Firefox (the default), Zen and Tide; any other saved skin falls back to Firefox
+                // Tide: Firefox, Zen and Tide (the default); any other saved skin falls back to Firefox
                 let current = ls.getItem(KEY);
+                if (current === null) current = 'tide';
                 if (current !== 'tide' && !SKINS.includes(current)) current = 'firefox';
                 let matchUA = ls.getItem(KEY_UA) !== 'false';
                 let sfxOn = ls.getItem(KEY_SFX) !== 'false';
