@@ -5777,18 +5777,32 @@
         .settings-nav-item[data-section="tutorial"], .settings-section[data-section="tutorial"],
         .settings-nav-item[data-section="tutorial-page"], .settings-section[data-section="tutorial-page"] { display: none !important; }
         /* Skins: Firefox and Zen only (no Tide, Tide+, Chrome or Brave) */
-        .skin-tile[data-skinval]:not([data-skinval="firefox"]):not([data-skinval="zen"]),
+        .skin-tile[data-skinval]:not([data-skinval="firefox"]):not([data-skinval="zen"]):not([data-skinval="tide"]),
         #plusStudioCard, #plusModsCard, #plusColorCard, #plusShapeCard,
         .settings-card:has(#skinUASwitch) { display: none !important; }
         /* Search: just the engine (no spellcheck, no favicon switch) */
         .settings-card:has(#settingsSpellSwitch), .settings-card:has(#faviconTideSwitch) { display: none !important; }
         /* one shield in the address bar (the green one), and no signing in */
         #skinShieldsBtn, #skinAvatarBtn { display: none !important; }
+        /* no extensions button, and no customise gear on the new tab page */
+        html[data-skin] #extPuzzleBtn, html #extPuzzleBtn, #skinPuzzleBtn, #skinExtShieldBtn, .fntp-gear { display: none !important; }
         /* the new tab page: two hands reaching out, drawn in characters */
         #newtab, #newtab .fntp, #newtab .skin-ntp {
             background: #000 url("background.webp") center / cover no-repeat !important;
         }
         #newtab .fntp-bg, #newtab .nt-bg { display: none !important; }
+    </style>
+    <style id="tide-mono-css">
+        /* The Tide skin: Firefox's layout in black and white (sites keep their colours) */
+        html.tide-mono .titlebar, html.tide-mono .navbar, html.tide-mono #bookmarksWrap { background: #000 !important; border-color: #2a2a2a !important; }
+        html.tide-mono .titlebar, html.tide-mono .navbar, html.tide-mono #bookmarksWrap,
+        html.tide-mono #skinMenu, html.tide-mono #skinSubMenu, html.tide-mono #skinPanel,
+        html.tide-mono #settingsPage, html.tide-mono #newtab, html.tide-mono .find-bar { filter: grayscale(1); }
+        html.tide-mono body, html.tide-mono .app, html.tide-mono main { background: #000 !important; }
+        html.tide-mono .view { border-color: #2a2a2a !important; }
+        /* its new tab page is just the picture: no search box, no shortcuts */
+        html.tide-mono #newtab .fntp-search, html.tide-mono #newtab .fntp-shortcuts { display: none !important; }
+        .skin-prev.sk-tide { filter: grayscale(1) brightness(0.8); }
     </style>
     <style id="tide-lite-css">
         #settingsWispInput,#settingsWispSave,#settingsWispReset { display: none !important; }
@@ -6984,6 +6998,14 @@
                                                     <div class="spz-body"></div>
                                                 </div>
                                                 <div class="skin-tile-name"><svg viewBox="0 0 24 24" width="15" height="15" style="flex:none;"><circle cx="12" cy="12" r="9.6" fill="none" stroke="#f76f53" stroke-width="2.4"/><circle cx="12" cy="12" r="4.9" fill="none" stroke="#f76f53" stroke-width="2.4"/><circle cx="12" cy="12" r="1.5" fill="#f76f53"/></svg><span>Zen</span><span class="skin-tile-check"><i class="fas fa-check"></i></span></div>
+                                            </button>
+                                            <button class="skin-tile" data-skinval="tide">
+                                                <div class="skin-prev sk-firefox sk-tide">
+                                                    <div class="sp-tabs"><span class="sp-tab"></span><span class="sp-tab sp-inactive"></span></div>
+                                                    <div class="sp-bar"><span class="sp-dot"></span><span class="sp-dot"></span><span class="sp-omni"></span><span class="sp-dot"></span></div>
+                                                    <div class="sp-body"></div>
+                                                </div>
+                                                <div class="skin-tile-name"><i class="fas fa-water" style="color:#fff;"></i><span>Tide</span><span class="skin-tile-check"><i class="fas fa-check"></i></span></div>
                                             </button>
                                             <button class="skin-tile" data-skinval="plus">
                                                 <div class="skin-prev sk-plus">
@@ -22538,10 +22560,9 @@ _VIEWER_DL_JS +
                     firefox: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0',
                     zen: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0'
                 };
-                // Tide: only Firefox (the default) and Zen; any other saved skin falls back to Firefox
+                // Tide: only Firefox (the default), Zen and Tide; any other saved skin falls back to Firefox
                 let current = ls.getItem(KEY);
-                if (!SKINS.includes(current)) current = 'firefox';
-                if (!SKINS.includes(current)) current = '';
+                if (current !== 'tide' && !SKINS.includes(current)) current = 'firefox';
                 let matchUA = ls.getItem(KEY_UA) !== 'false';
                 let sfxOn = ls.getItem(KEY_SFX) !== 'false';
                 let extPinned = ls.getItem(KEY_PIN) !== 'false';
@@ -23929,39 +23950,21 @@ _VIEWER_DL_JS +
                         mi('', 'Edit Theme...', zenThemePanelOpen)
                     ]);
                 }
+                // Tide: only the menu items that work in Tide
                 const ZEN_MENU = () => [
-                    mi('', 'Sync and save data', null, { badge: 'Sign In', cls: 'zen-sync-row' }),
                     mi('mi:select-window', 'New Tab', () => createTab(), { accel: 'Ctrl+T' }),
-                    mi('mi:open-in-new', 'New Window', A.newwin.fn, { accel: 'Ctrl+N' }),
-                    mi('mi:open-in-new', 'New blank window', A.newwin.fn, { accel: 'Ctrl+Shift+N' }),
-                    mi('mi:domino-mask', 'New Private Window', A.newwin.fn, { accel: 'Ctrl+Shift+P' }),
                     SEP,
                     mi('mi:star', 'Bookmarks', null, { sub: [
                         mi('', 'Bookmark current tab', () => { const b = $('bookmarkBtn'); if (b) b.click(); }, { accel: 'Ctrl+D' }),
                         mi('', 'Show bookmarks toolbar', A.bookmarks.fn, { accel: 'Ctrl+Shift+B' })
                     ] }),
                     mi('mi:history', 'History', null, { sub: chromeHistorySub }),
-                    mi('mi:download', 'Downloads', () => go('tide://settings/filesandmedia'), { accel: 'Ctrl+Shift+Y' }),
-                    mi('mi:key', 'Passwords', () => go('tide://settings/privacy')),
-                    mi('mi:extension', 'Extensions and Themes', () => go('tide://settings/skins'), { accel: 'Ctrl+Shift+A' }),
                     SEP,
-                    mi('mi:print', 'Print...', () => { try { (frame.contentWindow || window).print(); } catch (_) {} }, { accel: 'Ctrl+P' }),
-                    mi('mi:download', 'Save Page As...', savePageAs, { accel: 'Ctrl+Shift+Alt+S' }),
                     mi('mi:find-in-page', 'Find in Page...', () => { try { toggleFindBar(); } catch (_) {} }, { accel: 'Ctrl+F' }),
-                    mi('mi:translate', 'Translate Page...', null, { disabled: true }),
                     { zoom: true },
                     SEP,
                     mi('mi:settings', 'Settings', () => go('tide://settings')),
-                    mi('mi:build', 'More Tools', null, { sub: [
-                        mi('', 'Customize Zen...', zenThemePanelOpen),
-                        mi('', 'Web Developer Tools', () => { const b = $('codeBtn'); if (b) b.click(); }, { accel: 'F12' }),
-                        mi('', 'Task Manager', () => { const b = $('metricsBtn'); if (b) b.click(); })
-                    ] }),
-                    mi('mi:help', 'Help', null, { sub: [
-                        mi('', 'About Zen', () => go('tide://settings/about'))
-                    ] }),
-                    SEP,
-                    mi('mi:close', 'Quit', () => { try { window.close(); } catch (_) {} }, { accel: 'Ctrl+Q' })
+                    mi('mi:help', 'About Tide', () => go('tide://settings/about'))
                 ];
 
                 // ── compact ──
@@ -25177,40 +25180,21 @@ _VIEWER_DL_JS +
                 ];
 
                 // ═══════════ FIREFOX deep implementation ═══════════
+                // Tide: only the menu items that work in Tide
                 const FIREFOX_MENU = () => [
                     mi('', 'New tab', () => createTab(), { accel: 'Ctrl+T' }),
-                    mi('', 'New window', A.newwin.fn, { accel: 'Ctrl+N' }),
-                    mi('', 'New private window', A.newwin.fn, { accel: 'Ctrl+Shift+P' }),
                     SEP,
                     mi('', 'Bookmarks', null, { sub: [
                         mi('', 'Bookmark current tab', () => { const b = $('bookmarkBtn'); if (b) b.click(); }, { accel: 'Ctrl+D' }),
                         mi('', 'Show bookmarks toolbar', A.bookmarks.fn, { accel: 'Ctrl+Shift+B' })
                     ] }),
                     mi('', 'History', null, { sub: chromeHistorySub }),
-                    mi('', 'Downloads', () => go('tide://settings/filesandmedia'), { accel: 'Ctrl+J' }),
-                    mi('', 'Passwords', () => go('tide://settings/privacy')),
-                    mi('', 'Add-ons and themes', () => openPuzzlePanel($('skinPuzzleBtn')), { accel: 'Ctrl+Shift+A' }),
                     SEP,
-                    mi('', 'Print...', () => { try { (frame.contentWindow || window).print(); } catch (_) {} }, { accel: 'Ctrl+P' }),
-                    mi('', 'Save page as...', savePageAs, { accel: 'Ctrl+S' }),
                     mi('', 'Find in page...', () => { try { toggleFindBar(); } catch (_) {} }, { accel: 'Ctrl+F' }),
-                    mi('', 'Translate page...', null, { disabled: true }),
                     { zoom: true },
                     SEP,
                     mi('', 'Settings', () => go('tide://settings')),
-                    mi('', 'More tools', null, { sub: [
-                        mi('', 'Tide Assistant', () => { const b = $('aiBtn'); if (b) b.click(); }, { accel: 'Alt+A' }),
-                        mi('', 'Customize toolbar...', () => go('tide://settings/skins')),
-                        mi('', 'Task Manager', () => { const b = $('metricsBtn'); if (b) b.click(); }, { accel: 'Shift+Esc' }),
-                        mi('', 'Web Developer Tools', () => { const b = $('codeBtn'); if (b) b.click(); }, { accel: 'F12' }),
-                        mi('', 'Browser logs', () => { const b = $('devToggle'); if (b) b.click(); })
-                    ] }),
-                    mi('', 'Help', null, { sub: [
-                        mi('', 'About Firefox', () => go('tide://settings/about')),
-                        mi('', 'Report broken site...', () => createTab('https://github.com/nautilus-os'))
-                    ] }),
-                    SEP,
-                    mi('', 'Quit', () => { try { window.close(); } catch (_) {} }, { accel: 'Ctrl+Shift+Q' })
+                    mi('', 'About Tide', () => go('tide://settings/about'))
                 ];
                 function openFFSyncPanel(anchor) {
                     if (panelEl.classList.contains('open') && panelEl.dataset.kind === 'ffsync') { closePanel(); return; }
@@ -25722,16 +25706,19 @@ _VIEWER_DL_JS +
                 // ── Apply + persist ──
                 function refreshSkinTiles() {
                     document.querySelectorAll('.skin-tile').forEach(t =>
-                        t.classList.toggle('selected', (t.dataset.skinval || '') === current));
+                        t.classList.toggle('selected', (t.dataset.skinval || '') === (document.documentElement.classList.contains('tide-mono') ? 'tide' : current)));
                 }
                 function applySkin(name, opts) {
                     opts = opts || {};
-                    current = SKINS.includes(name) ? name : 'firefox';
+                    // the Tide skin is Firefox's layout in black and white
+                    const mono = name === 'tide';
+                    current = mono ? 'firefox' : SKINS.includes(name) ? name : 'firefox';
                     const root = document.documentElement;
+                    root.classList.toggle('tide-mono', mono);
                     if (current) root.setAttribute('data-skin', current);
                     else root.removeAttribute('data-skin');
                     if (opts.save !== false) {
-                        ls.setItem(KEY, current);
+                        ls.setItem(KEY, mono ? 'tide' : current);
                     }
                     const micon = $('skinMenuIcon');
                     if (micon) micon.className = (current === 'firefox' || (plusIs() && plusCfg.menu === 'firefox')) ? 'fas fa-bars' : 'fas fa-ellipsis-vertical';
