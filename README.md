@@ -8,7 +8,8 @@ WebAssembly) over a [Wisp](https://github.com/MercuryWorkshop/wisp-protocol)
 WebSocket tunnel, rewrites them and shows them in a sandboxed frame. It needs no
 service worker.
 
-Live at **https://study.chalkbored.win**, where ChalkBored's Chalk TV and
+Live at **https://tide.guernica4u.workers.dev** (also https://study.chalkbored.win,
+which school filters block along with all of .win), where ChalkBored's Chalk TV and
 Chalk Browser load it.
 
 ## What Tide changes from GUST

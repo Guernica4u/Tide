@@ -19119,7 +19119,7 @@ _VIEWER_DL_JS +
             // ── Tide: commands from the ChalkBored page around Tide ──────────
             // Only the page directly around Tide, and only from ChalkBored, may
             // send these: {tide:"go", url}, {tide:"back"}, {tide:"reload"}.
-            const TIDE_PARENTS = ['https://chalkbored.win', 'https://chalkbored-for-students.vercel.app'];
+            const TIDE_PARENTS = ['https://chalkbored.win', 'https://chalkbored-for-students.vercel.app', 'https://chalkbored.guernica4u.workers.dev'];
             window.addEventListener('message', ev => {
                 if (window.parent === window || ev.source !== window.parent) return;
                 const localParent = /^(127\.0\.0\.1|localhost)$/.test(location.hostname)
