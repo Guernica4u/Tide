@@ -5758,6 +5758,8 @@
         html.tide-tv .titlebar, html.tide-tv .navbar, html.tide-tv #bookmarksWrap { display: none !important; }
         html.tide-tv main { padding: 0 !important; gap: 0 !important; }
         html.tide-tv .view { border: none !important; border-radius: 0 !important; box-shadow: none !important; }
+        /* Opera GX's Easy setup panel waits just off-screen and its shadow spills in */
+        #gxEasy:not(.open) { display: none !important; }
     </style>
     <style id="tide-lite-css">
         #settingsWispInput,#settingsWispSave,#settingsWispReset { display: none !important; }
