@@ -1,0 +1,11 @@
+# Security headers for Cloudflare (Workers static assets read this file).
+#
+# frame-ancestors: only ChalkBored may put Tide in a frame (Chalk TV and
+#   Chalk Browser). Opening Tide on its own still works.
+# nosniff: browsers don't guess file types.
+# Referrer-Policy: sites opened in Tide never learn Tide's address.
+/*
+  Content-Security-Policy: frame-ancestors 'self' https://chalkbored.win https://chalkbored-for-students.vercel.app
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Strict-Transport-Security: max-age=31536000
