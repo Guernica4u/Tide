@@ -5849,7 +5849,7 @@
     <script>
     (function () {
         var defaults = {
-            "gust:block:v1": "false",
+            "gust:block:v1": "true",
             "gust:tabcache:v1": "false",
             "gust:media:range:v1": "0",
             "gust:media:download:v1": "0",
@@ -5869,6 +5869,16 @@
             "gust:fallback:enabled": "0"
         };
         var inst = 'tide'; // same fixed storage namespace as the main script
+        // Tide speed settings (2026-10-25), applied once even over older saved settings:
+        // ad blocking on, no rotating between servers, no waiting for images
+        try {
+            if (!localStorage.getItem(inst + ':tide:speed:v1')) {
+                localStorage.setItem(inst + ':gust:block:v1', 'true');
+                localStorage.removeItem(inst + ':gust:wisp:poolmode:v1');
+                localStorage.removeItem(inst + ':gust:render:imglimit');
+                localStorage.setItem(inst + ':tide:speed:v1', '1');
+            }
+        } catch (e) {}
         // spellcheck is always off (its setting is gone)
         ['gust:spellcheck:v1', inst + ':gust:spellcheck:v1'].forEach(function (key) {
             try { localStorage.setItem(key, 'false'); } catch (e) {}
@@ -9798,7 +9808,8 @@ window._libcurlReady = true;
             }
             // Multi-WISP round-robin. Default ON (unset → enabled): '0' is the only
             // off value, so a fresh install gets pool resilience without opting in.
-            function poolModeOn() { try { return ls.getItem('gust:wisp:poolmode:v1') !== '0'; } catch { return true; } }
+            // Tide: rotating between servers is opt-in; by default Tide sticks to one fast server
+            function poolModeOn() { try { return ls.getItem('gust:wisp:poolmode:v1') === '1'; } catch { return false; } }
             function probeWispLatency(url, ms = 6000) {
                 return new Promise(resolve => {
                     const t0 = performance.now();
@@ -18633,7 +18644,7 @@ _VIEWER_DL_JS +
                         });
                     }
 
-                    const _imgLimit = Math.max(0, parseInt((() => { try { return ls.getItem('gust:render:imglimit'); } catch(e) { return null; } })() || '300', 10));
+                    const _imgLimit = Math.max(0, parseInt((() => { try { return ls.getItem('gust:render:imglimit'); } catch(e) { return null; } })() || '0', 10));
                     const images = _imgLimit > 0 ? [...doc.querySelectorAll("img[src]")].slice(0, _imgLimit) : [];
                     const loadedImageUrls = new Set();
                     const imagePromises = images.map(async img => {
@@ -19882,7 +19893,7 @@ _VIEWER_DL_JS +
             // Background-benchmark the WISP pool at startup so round-robin picks
             // (if enabled) already have latency data for the first navigation, then
             // remember the fastest healthy relay as next launch's startup default.
-            Promise.resolve(benchmarkWispPool()).then(rememberFastestRelay, () => {});
+            if (poolModeOn()) Promise.resolve(benchmarkWispPool()).then(rememberFastestRelay, () => {});
 
             document.querySelectorAll('.settings-nav-item').forEach(navBtn => {
                 navBtn.addEventListener('click', () => {
@@ -20258,6 +20269,38 @@ _VIEWER_DL_JS +
                             }, 200);
                             await Promise.race([bench, new Promise(r => setTimeout(r, 25000))]);
                             clearInterval(tick);
+                        } catch (e) {} finally {
+                            hideBootBenchmark();
+                        }
+                    }
+
+                    // ── Tide: one fast server ─────────────────────────────────────
+                    // Unless a server was chosen in Settings, test every server once,
+                    // all at the same time (2.5 s at most), and use the fastest. No
+                    // rotating between servers afterwards.
+                    let _pinnedWisp = null;
+                    try { _pinnedWisp = ls.getItem('gust:wisp:v1'); } catch (e) {}
+                    if (!poolModeOn() && !_pinnedWisp && !TIDE.wisp && typeof curl !== 'undefined' && curl) {
+                        try {
+                            showBootBenchmark();
+                            const _pool = getWispPool();
+                            let _done = 0;
+                            const _res = await Promise.all(_pool.map(async u => {
+                                const ms = await probeWispLatency(u, 2500);
+                                setBootBenchmarkProgress(++_done, _pool.length);
+                                wispHealth[u] = { latency: ms, checkedAt: Date.now(), healthy: ms != null, samples: 1 };
+                                return [u, ms];
+                            }));
+                            saveWispHealth();
+                            const _best = _res.filter(r => r[1] != null).sort((a, b) => a[1] - b[1])[0];
+                            if (_best && _best[0] !== WISP) {
+                                WISP = _best[0];
+                                libcurl.set_websocket(WISP);
+                                curl = new libcurl.HTTPSession();
+                                curl.set_connections(MAX_CONCURRENT, MAX_CONCURRENT, MAX_CONCURRENT);
+                                log('Using the fastest server: ' + WISP.replace(/^wss?:\/\//, '').split('/')[0] + ' (' + Math.round(_best[1]) + ' ms)');
+                            }
+                            rememberFastestRelay();
                         } catch (e) {} finally {
                             hideBootBenchmark();
                         }
@@ -22523,7 +22566,7 @@ _VIEWER_DL_JS +
                 makeCounter('fallbackRetryMinus', 'fallbackRetryPlus', 'fallbackRetryVal', 'gust:fallback:retries', 1, 10, '3');
                 makeCounter('fallbackDelayMinus', 'fallbackDelayPlus', 'fallbackDelayVal', 'gust:fallback:delay',   0,  30, '3');
                 makeCounter('scriptLimitMinus',   'scriptLimitPlus',   'scriptLimitVal',   'gust:render:scriptlimit', 50, 500, '250', 25);
-                makeCounter('imgLimitMinus',      'imgLimitPlus',      'imgLimitVal',      'gust:render:imglimit',    0, 1000, '300', 25);
+                makeCounter('imgLimitMinus',      'imgLimitPlus',      'imgLimitVal',      'gust:render:imglimit',    0, 1000, '0', 25);
 
                 // Advanced Rendering — Save / Reset
                 (() => {
