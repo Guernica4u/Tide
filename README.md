@@ -13,6 +13,12 @@ Chalk Browser load it.
 
 ## What Tide changes from GUST
 
+- **Fast engine** (`engine/`, see `engine/README.md`): where the browser allows service
+  workers, websites open through Scramjet, which streams pages like a normal browser
+  (about 3.5x faster than GUST's engine on a heavy page). Tide's tabs, address bar,
+  skins and pages stay. Without service workers Tide uses GUST's engine.
+- One fast public server picked at start-up instead of rotating between many.
+
 - Starts from GUST's "Lite" settings (no tutorial, no ad-block panel, media
   viewers off, server settings hidden). They are defaults, so Settings changes stick.
 - Removed: GUST's built-in chat-app client and its AI helper; the Opera GX skin
