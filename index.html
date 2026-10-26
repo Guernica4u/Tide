@@ -20309,7 +20309,10 @@ _VIEWER_DL_JS +
             // Signal that libcurl init is complete so deferred UI (tutorial, etc.) can start
                     if (window._onLibcurlInitDone) window._onLibcurlInitDone();
 
-                    if (tabsLoaded) {
+                    // a site asked for in #tide= (Chalk TV, Chalk Browser ?url=) is the only page opened
+                    if (TIDE.open) {
+                        go(TIDE.open);
+                    } else if (tabsLoaded) {
                         const activeTab = getActiveTab();
                         if (activeTab && activeTab.url !== HOME_INTERNAL && !isSettingsPage(activeTab.url)) {
                             go(activeTab.url, false);
@@ -22403,7 +22406,6 @@ _VIEWER_DL_JS +
                 overlay.classList.remove('splash');
                 _libcurlInitDone = true;
                 _maybeStartTutorial();
-                if (TIDE.open) go(TIDE.open);
             };
             // Re-enable the welcome tour so it appears automatically after the browser is ready.
             _tutorialWaiting = true;
