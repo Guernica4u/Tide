@@ -20299,6 +20299,7 @@ _VIEWER_DL_JS +
                                 curl = new libcurl.HTTPSession();
                                 curl.set_connections(MAX_CONCURRENT, MAX_CONCURRENT, MAX_CONCURRENT);
                                 log('Using the fastest server: ' + WISP.replace(/^wss?:\/\//, '').split('/')[0] + ' (' + Math.round(_best[1]) + ' ms)');
+                                try { feSetWisp(WISP); } catch (e) {}
                             }
                             rememberFastestRelay();
                         } catch (e) {} finally {
@@ -20673,6 +20674,7 @@ _VIEWER_DL_JS +
 
                 async function applyWispUrl(val) {
                     WISP = val;
+                    try { feSetWisp(val); } catch (e) {}
                     try {
                         await libcurl.load_wasm();
                         libcurl.set_websocket(val);
@@ -22410,6 +22412,252 @@ _VIEWER_DL_JS +
             // Re-enable the welcome tour so it appears automatically after the browser is ready.
             _tutorialWaiting = true;
             _maybeStartTutorial();
+
+            // ── Tide: the fast engine ─────────────────────────────────────────
+            // Websites open through Scramjet (engine/, see engine/README.md) and its
+            // service worker, which stream pages like a normal browser instead of
+            // Tide fetching every script first. Tide's own tabs, address bar, skins
+            // and pages stay; each tab showing a website gets its own engine frame.
+            // The engine uses the same server as the rest of Tide, and follows it
+            // when the server changes. Without service workers (Firefox private
+            // windows), Tide keeps using its own engine.
+            const FE = { ready: false, ctl: null, prefix: '', init: null };
+            const FE_BASE = new URL('engine/', location.href).pathname;
+            function feLoadScript(src) {
+                return new Promise((ok, fail) => {
+                    const sc = document.createElement('script');
+                    sc.src = src;
+                    sc.onload = () => ok();
+                    sc.onerror = () => fail(new Error('could not load ' + src));
+                    document.head.appendChild(sc);
+                });
+            }
+            /* serviceWorker.ready only settles for a worker covering this page, and
+               this page sits outside engine/, so wait on the registration */
+            function feWorkerActive(reg) {
+                if (reg.active) return Promise.resolve(reg.active);
+                const w = reg.installing || reg.waiting;
+                return new Promise((ok, fail) => {
+                    const timer = setTimeout(() => fail(new Error('service worker did not start')), 15000);
+                    w.addEventListener('statechange', () => {
+                        if (w.state === 'activated') { clearTimeout(timer); ok(reg.active || w); }
+                        else if (w.state === 'redundant') { clearTimeout(timer); fail(new Error('service worker did not start')); }
+                    });
+                });
+            }
+            /* Firefox cannot hand a stream between pages, so there each answer goes over whole */
+            function feCanStream() {
+                try { const ch = new MessageChannel(); const rs = new ReadableStream(); ch.port1.postMessage(rs, [rs]); return true; }
+                catch (e) { return false; }
+            }
+            if ('serviceWorker' in navigator) {
+                FE.init = (async () => {
+                    const reg = await navigator.serviceWorker.register(FE_BASE + 'sw.js', { scope: FE_BASE, updateViaCache: 'none' });
+                    const sw = await feWorkerActive(reg);
+                    await feLoadScript(FE_BASE + 'scramjet.js');
+                    await feLoadScript(FE_BASE + 'controller.api.js');
+                    await feLoadScript(FE_BASE + 'libcurl-client.js');
+                    if (!window.$scramjet || !window.$scramjetController || !window.LibcurlTransport) throw new Error('engine files did not load');
+                    const ctl = new $scramjetController.Controller({
+                        serviceworker: sw,
+                        transport: new LibcurlTransport.LibcurlClient({ wisp: WISP }),
+                        config: {
+                            prefix: FE_BASE + 'go/',
+                            scramjetPath: FE_BASE + 'scramjet.js',
+                            injectPath: FE_BASE + 'controller.inject.js',
+                            wasmPath: FE_BASE + 'scramjet.wasm'
+                        }
+                    });
+                    await ctl.wait();
+                    FE.ctl = ctl;
+                    FE.wisp = WISP;
+                    FE.ready = true;
+                    log('Fast engine ready');
+                    feSetWisp(WISP);
+                })().catch(e => { FE.init = null; log('Fast engine unavailable, using Tide\'s own: ' + e.message, 'warn'); });
+            }
+            // the engine follows Tide's server (start-up pick, Settings > Servers)
+            function feSetWisp(url) {
+                if (!FE.ctl || !url || url === FE.wisp) return;
+                FE.ctl.setTransport(new LibcurlTransport.LibcurlClient({ wisp: url }));
+                FE.wisp = url;
+            }
+            function feOn(tab) { return !!(tab && tab.sf && tab.sfShown); }
+            function feHideAll() {
+                tabs.forEach(t => {
+                    if (t.sf && t.sfShown) {
+                        t.sf.element.style.display = 'none';
+                        t.sfShown = false;
+                        try { t.sf.element.contentDocument.querySelectorAll('video, audio').forEach(m => { try { m.pause(); } catch (e) {} }); } catch (e) {}
+                    }
+                });
+            }
+            function feFrameFor(tab) {
+                if (tab.sf) return tab.sf;
+                const sf = FE.ctl.createFrame();
+                const { Tap, BareResponse } = $scramjet;
+                if (TIDE.ui === 'tv') {
+                    /* Chalk TV has nowhere to put downloads, so they are dropped */
+                    Tap.tap(sf.hooks.fetch.preresponse, (ctx, props) => {
+                        const r = props.response;
+                        const dest = ctx.parsed.destination || ctx.request.rawDestination;
+                        if (!/^\s*attachment/i.test(r.headers.get('content-disposition') || '') || (dest !== 'document' && dest !== 'iframe')) return;
+                        try { r.body && r.body.cancel(); } catch (e) {}
+                        props.response = BareResponse.fromNativeResponse(new Response(null, { status: 204 }));
+                    });
+                }
+                if (!feCanStream()) Tap.tap(sf.hooks.fetch.response, async (ctx, props) => {
+                    const body = props.response.body;
+                    if (body instanceof ReadableStream) props.response.body = await new Response(body).arrayBuffer();
+                });
+                const el = sf.element;
+                el.title = 'Tide';
+                el.allow = 'fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write';
+                el.allowFullscreen = true;
+                el.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals allow-pointer-lock allow-presentation allow-orientation-lock' + (TIDE.ui === 'tv' ? '' : ' allow-downloads'));
+                el.name = 'tide-fe-' + tab.id;
+                el.style.display = 'none';
+                frame.parentNode.appendChild(el);
+                FE.prefix = sf.context.prefix.href;
+                feKeepInTide(sf);
+                tab.sf = sf;
+                return sf;
+            }
+            function feShow(tab) {
+                feHideAll();
+                try { hideNewTab(); } catch (e) {}
+                try { hideSettingsPage(); } catch (e) {}
+                try { closeSkinPages(); } catch (e) {}
+                frame.style.display = 'none';
+                try { hideOverlay(); } catch (e) {}
+                tab.sf.element.style.display = 'block';
+                tab.sfShown = true;
+            }
+            /* a link or window that asks for a new tab opens as a Tide tab (in Chalk TV,
+               right here); pop-ups nobody clicked for are dropped */
+            function feOpen(url) { if (TIDE.ui === 'tv') go(url); else createTab(url); }
+            function feKeepInTide(sf) {
+                const patchWin = win => {
+                    let doc;
+                    try { doc = win.document; } catch (e) { return; }
+                    if (!doc) return;
+                    try { for (let i = 0; i < win.frames.length; i++) patchWin(win.frames[i]); } catch (e) {}
+                    if (win.__tideKeep) return;
+                    if (!String(win.location.href).startsWith(sf.context.prefix.href)) return;
+                    win.__tideKeep = true;
+                    const realUrl = raw => {
+                        let u = null;
+                        try {
+                            const abs = new URL(String(raw), win.location.href).href;
+                            u = abs.startsWith(sf.context.prefix.href) ? $scramjet.unrewriteUrl(abs, sf.context)
+                                : new URL(String(raw), $scramjet.unrewriteUrl(win.location.href, sf.context)).href;
+                        } catch (e) { return null; }
+                        return /^https?:/i.test(u) ? u : null;
+                    };
+                    const elsewhere = t => !!t && !/^_(self|parent|top)$/i.test(t);
+                    const targetOf = a => a.getAttribute('target') || (doc.querySelector('base[target]') || { getAttribute: () => '' }).getAttribute('target');
+                    win.open = function (url) {
+                        const real = url == null || String(url) === '' ? null : realUrl(url);
+                        const clicked = !win.navigator.userActivation || win.navigator.userActivation.isActive;
+                        if (real && clicked) feOpen(real);
+                        return null;
+                    };
+                    const onClick = e => {
+                        const a = e.target && e.target.closest && e.target.closest('a[href], area[href]');
+                        if (!a) return;
+                        const extra = e.type === 'auxclick' ? e.button === 1 : (e.ctrlKey || e.metaKey || e.shiftKey);
+                        if (!extra && !elsewhere(targetOf(a))) return;
+                        const real = realUrl(a.getAttribute('href'));
+                        if (!real) return;
+                        e.preventDefault(); e.stopImmediatePropagation();
+                        feOpen(real);
+                    };
+                    doc.addEventListener('click', onClick, true);
+                    doc.addEventListener('auxclick', onClick, true);
+                };
+                const patch = () => { try { patchWin(sf.element.contentWindow); } catch (e) {} };
+                sf.element.addEventListener('load', patch);
+                setInterval(patch, 700);
+            }
+
+            // websites go through the fast engine; Tide's own pages (tide://) don't
+            const _tideGo = go;
+            go = async function (url, push = true, method = 'GET', body = null, _isRetry = false) {
+                if (FE.init && !FE.ready) await Promise.race([FE.init, new Promise(r => setTimeout(r, 15000))]);
+                let u = '';
+                try { u = normUrl(url); } catch (e) {}
+                const tab = getActiveTab();
+                if (!FE.ready || !tab || method !== 'GET' || body || !/^https?:\/\//i.test(u)) {
+                    feHideAll();
+                    return _tideGo.apply(this, arguments);
+                }
+                const sf = feFrameFor(tab);
+                feShow(tab);
+                if (push) {
+                    hist = hist.slice(0, histIdx + 1);
+                    if (hist.length === 0 || hist[hist.length - 1] !== u) hist.push(u);
+                    histIdx = hist.length - 1;
+                }
+                pageUrl = u;
+                urlInput.value = u;
+                updateTabUrl(u);
+                updateNav();
+                try { updateSecurityChip(u); } catch (e) {}
+                /* switching back to a tab that already shows this page: just show it */
+                if (!push && tab.sfUrl === u) return;
+                tab.sfUrl = u;
+                tab.sfSince = Date.now();
+                try { setTabTitle(new URL(u).hostname.replace(/^www\./, '')); } catch (e) {}
+                sf.go(u);
+            };
+
+            // switching tabs: hide the engine frames first, then Tide shows the right page
+            const _tideSwitchToTab = switchToTab;
+            switchToTab = function (tabId) {
+                if (tabId !== activeTabId) feHideAll();
+                return _tideSwitchToTab.apply(this, arguments);
+            };
+            const _tideCloseTab = closeTab;
+            closeTab = function (tabId) {
+                const t = tabs.find(x => x.id === tabId);
+                const r = _tideCloseTab.apply(this, arguments);
+                if (t && t.sf && !tabs.includes(t)) { try { t.sf.element.remove(); } catch (e) {} t.sf = null; }
+                return r;
+            };
+            // Reload reloads the engine frame; Back/Forward already go through go()
+            const _tideReload = $("reload").onclick;
+            $("reload").onclick = function (e) {
+                const tab = getActiveTab();
+                if (feOn(tab)) { try { tab.sf.reload(); } catch (err) {} return; }
+                if (_tideReload) return _tideReload.call(this, e);
+            };
+
+            // follow the page: links and redirects inside it update the address bar,
+            // the tab's history and its title
+            setInterval(() => {
+                const tab = getActiveTab();
+                if (!feOn(tab)) return;
+                let href;
+                try { href = tab.sf.element.contentWindow.location.href; } catch (e) { return; }
+                if (!FE.prefix || !href.startsWith(FE.prefix)) return;
+                let real;
+                try { real = $scramjet.unrewriteUrl(href, tab.sf.context); } catch (e) { return; }
+                if (real && /^https?:/i.test(real) && real !== tab.sfUrl) {
+                    /* a redirect right after Tide asked for a page replaces that entry;
+                       anything later (a link) is a new one */
+                    if (Date.now() - (tab.sfSince || 0) < 5000 && hist[histIdx] === tab.sfUrl) hist[histIdx] = real;
+                    else { hist = hist.slice(0, histIdx + 1); hist.push(real); histIdx = hist.length - 1; tab.sfSince = 0; }
+                    tab.sfUrl = real;
+                    pageUrl = real;
+                    if (document.activeElement !== urlInput) urlInput.value = real;
+                    updateTabUrl(real);
+                    updateNav();
+                    try { updateSecurityChip(real); } catch (e) {}
+                }
+                let title = '';
+                try { title = tab.sf.element.contentDocument.title; } catch (e) {}
+                if (title && title !== tab.title) setTabTitle(title);
+            }, 600);
 
             // ── Fullscreen logic ──────────────────────────────────────────────
             function _doRequestFullscreen() {
