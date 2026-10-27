@@ -9783,17 +9783,12 @@ window._libcurlReady = true;
             // fastest-first by measured median latency, though rankPoolCandidates
             // re-sorts on live health data at runtime.
             const WISP_POOL_DEFAULTS = [...new Set([
-                "wss://definitelyscience.com/wisp/",   // 111ms
-                "wss://mages.io/wisp/",                // 114ms
-                "wss://lichology.com/wisp/",           // 118ms
-                "wss://motor-cycle-part.org/wisp/",    // 127ms
-                "wss://area.forwardersoft.com/wisp/",  // 154ms
-                "wss://truf.the-nest.at/wisp/",        // 168ms
-                "wss://thoughts.forwardersoft.com/wisp/", // 198ms
-                "wss://wisp.terbiumon.top/wisp/",      // 223ms
-                "wss://anura.pro/",                    // 280ms
-                "wss://wisp.mercurywork.shop/",        // 294ms
-                "wss://english.algebra.teacher.vocabulary.homework.forwardersoft.com/wisp/" // 361ms
+                "wss://lichology.com/wisp/",           // 182ms
+                "wss://wisp.mercurywork.shop/",        // 193ms
+                "wss://wisp.terbiumon.top/wisp/",      // 250ms
+                "wss://definitelyscience.com/wisp/",   // 302ms
+                "wss://anura.pro/",                    // 341ms
+                "wss://motor-cycle-part.org/wisp/"     // 368ms
             ])];
             let wispHealth = (function () { try { return JSON.parse(ls.getItem('gust:wisp:health:v1') || '{}'); } catch { return {}; } })();
             function saveWispHealth() { try { ls.setItem('gust:wisp:health:v1', JSON.stringify(wispHealth)); } catch {} }
