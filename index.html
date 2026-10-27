@@ -9783,9 +9783,12 @@ window._libcurlReady = true;
             // fastest-first by measured median latency, though rankPoolCandidates
             // re-sorts on live health data at runtime.
             const WISP_POOL_DEFAULTS = [...new Set([
+                "wss://fern.best/wisp/",               // 121ms
                 "wss://lichology.com/wisp/",           // 182ms
                 "wss://wisp.mercurywork.shop/",        // 193ms
+                "wss://wisp.frostcatcher.com/wisp/",   // 205ms
                 "wss://wisp.terbiumon.top/wisp/",      // 250ms
+                "wss://gointospace.app/wisp/",         // 300ms
                 "wss://definitelyscience.com/wisp/",   // 302ms
                 "wss://anura.pro/",                    // 341ms
                 "wss://motor-cycle-part.org/wisp/"     // 368ms
