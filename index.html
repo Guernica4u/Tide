@@ -5796,6 +5796,31 @@
         #overlay.splash { background: rgba(0, 0, 0, .9) !important; }
         #overlay .spinner { border-color: rgba(255, 255, 255, .12) !important; border-top-color: #fff !important; }
     </style>
+    <style id="tide-look-css">
+        /* ChalkBored's theme on the Tide skin, when Chalk TV or Chalk Browser passes one in */
+        html.tide-mono[data-cb-look="night"] {
+            --bg0: #16181d; --bg1: #1f232a; --bg2: #262b33; --bg3: #2f3540; --bg-elevated: #1f232a;
+            --bd: #2b3039; --bd2: #3a404b; --tx: #d9d5cc; --tx2: #b8b4ac; --tx3: #8b909a;
+            --ac: #8fb3d9; --ac2: #b5cde6; --sk-bar: #1f232a; --sk-field: #2b3039;
+        }
+        html.tide-mono[data-cb-look="mono"] {
+            --bg0: #0b0b0b; --bg1: #171717; --bg2: #1f1f1f; --bg3: #2a2a2a; --bg-elevated: #171717;
+            --bd: #2e2e2e; --bd2: #444444; --tx: #f2f2f2; --tx2: #c8c8c8; --tx3: #9a9a9a;
+            --ac: #f2f2f2; --ac2: #ffffff; --sk-bar: #121212; --sk-field: #1f1f1f;
+        }
+        html.tide-mono[data-cb-look="space"] {
+            --bg0: #0b0f1c; --bg1: #182030; --bg2: #1e2840; --bg3: #2a3450; --bg-elevated: #182030;
+            --bd: #2a3350; --bd2: #3a4568; --tx: #e6e9f2; --tx2: #c4cbe0; --tx3: #a4adc4;
+            --ac: #dbe3f6; --ac2: #ffffff; --sk-bar: #141b2e; --sk-field: #1e2740;
+        }
+        html.tide-mono[data-cb-look] .titlebar, html.tide-mono[data-cb-look] .navbar,
+        html.tide-mono[data-cb-look] #bookmarksWrap { background: var(--sk-bar) !important; border-color: var(--bd) !important; }
+        html.tide-mono[data-cb-look] .titlebar, html.tide-mono[data-cb-look] .navbar, html.tide-mono[data-cb-look] #bookmarksWrap,
+        html.tide-mono[data-cb-look] #skinMenu, html.tide-mono[data-cb-look] #skinSubMenu, html.tide-mono[data-cb-look] #skinPanel,
+        html.tide-mono[data-cb-look] #settingsPage, html.tide-mono[data-cb-look] #newtab, html.tide-mono[data-cb-look] .find-bar { filter: none; }
+        html.tide-mono[data-cb-look] body, html.tide-mono[data-cb-look] .app, html.tide-mono[data-cb-look] main { background: var(--bg0) !important; }
+        html.tide-mono[data-cb-look] .view { border-color: var(--bd) !important; }
+    </style>
     <style id="tide-mono-css">
         /* The Tide skin: Firefox's layout in black and white (sites keep their colours) */
         html.tide-mono .titlebar, html.tide-mono .navbar, html.tide-mono #bookmarksWrap { background: #000 !important; border-color: #2a2a2a !important; }
@@ -9733,9 +9758,15 @@ window._libcurlReady = true;
             // with "open":"<site>" to show a site first and "ui":"tv" for Chalk TV
             // (one site: no tabs or address bar), and "fresh":true to start clean
             // (see TIDE.wiped below), and "relay":"wss://…" to use one of the public
-            // servers in WISP_POOL_DEFAULTS. Tide always uses GUST's public
+            // servers in WISP_POOL_DEFAULTS, and "look":"space"|"night"|"mono" to wear
+            // ChalkBored's theme (also sent live as {tide:"look"}). Tide always uses GUST's public
             // relays; it never takes a private server or a key.
             window.__TIDE_SHELL__ = true; // frames inside Tide look for this to find it
+            // ChalkBored's theme, worn by the Tide skin (see tide-look-css); other skins keep their colours
+            const TIDE_LOOKS = { space: 1, night: 1, mono: 1 };
+            function tideLook(look) {
+                if (TIDE_LOOKS[look]) document.documentElement.dataset.cbLook = look;
+            }
             const TIDE = (function () {
                 const t = { open: null, ui: null };
                 const m = /[#&]tide=([^&]*)/.exec(location.hash);
@@ -9747,6 +9778,7 @@ window._libcurlReady = true;
                 if (typeof cfg.open === 'string' && /^https?:\/\//i.test(cfg.open)) t.open = cfg.open;
                 if (cfg.fresh === true) t.fresh = true;
                 if (typeof cfg.relay === 'string' && cfg.relay.length < 200) t.relay = cfg.relay;
+                if (typeof cfg.look === 'string') tideLook(cfg.look);
                 if (cfg.ui === 'tv') { t.ui = 'tv'; document.documentElement.classList.add('tide-tv'); }
                 return t;
             })();
@@ -9845,7 +9877,7 @@ window._libcurlReady = true;
             // server look bad, or vice versa). Sample up to 10x sequentially and
             // average the successes — but bail after 3 straight failures so a
             // genuinely dead server doesn't cost 10 full timeouts.
-            async function probeWispPoolServer(url, attempts = 10, ms = 4000) {
+            async function probeWispPoolServer(url, attempts = 3, ms = 4000) {
                 const samples = [];
                 let consecutiveFails = 0;
                 for (let i = 0; i < attempts; i++) {
@@ -19235,6 +19267,7 @@ _VIEWER_DL_JS +
                 const d = ev.data;
                 if (!d || typeof d.tide !== 'string') return;
                 if (d.tide === 'go' && typeof d.url === 'string' && /^https?:\/\//i.test(d.url)) go(d.url);
+                else if (d.tide === 'look' && typeof d.look === 'string') tideLook(d.look);
                 else if (d.tide === 'back') $("back").click();
                 else if (d.tide === 'reload') $("reload").click();
             });
@@ -20771,7 +20804,7 @@ _VIEWER_DL_JS +
                     paintServer('Reconnected.');
                 };
                 if (srvFastest) srvFastest.onclick = async () => {
-                    paintServer('Testing every server… (takes a few seconds)');
+                    paintServer('Testing every server 3 times…');
                     await benchmarkWispPool();
                     const best = getWispPool().filter(u => wispHealth[u] && wispHealth[u].healthy && wispHealth[u].latency != null)
                         .sort((a, b) => wispHealth[a].latency - wispHealth[b].latency)[0];
