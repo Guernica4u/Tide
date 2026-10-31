@@ -9731,7 +9731,8 @@ window._libcurlReady = true;
             // ── Tide: how ChalkBored opens it ─────────────────────────────────
             // Chalk TV and Chalk Browser open Tide as  https://<tide>/#tide=<json>
             // with "open":"<site>" to show a site first and "ui":"tv" for Chalk TV
-            // (one site: no tabs or address bar). Tide always uses GUST's public
+            // (one site: no tabs or address bar), and "fresh":true to start clean
+            // (see TIDE.wiped below). Tide always uses GUST's public
             // relays; it never takes a private server or a key.
             window.__TIDE_SHELL__ = true; // frames inside Tide look for this to find it
             const TIDE = (function () {
@@ -9743,8 +9744,25 @@ window._libcurlReady = true;
                 try { cfg = JSON.parse(decodeURIComponent(m[1])); } catch (e) { return t; }
                 if (!cfg) return t;
                 if (typeof cfg.open === 'string' && /^https?:\/\//i.test(cfg.open)) t.open = cfg.open;
+                if (cfg.fresh === true) t.fresh = true;
                 if (cfg.ui === 'tv') { t.ui = 'tv'; document.documentElement.classList.add('tide-tv'); }
                 return t;
+            })();
+            // "fresh": nothing from an earlier visit comes back. Websites' cookies and
+            // storage are wiped before the engine starts, no tab is restored and nothing
+            // goes into history. Tide's own settings (skin, server) stay.
+            TIDE.wiped = !TIDE.fresh ? Promise.resolve() : (function () {
+                const siteKey = /^[a-z0-9-]+(.[a-z0-9-]+)+(:d+)?@/i;   // the fast engine keeps a site's storage as "host@key"
+                [localStorage, sessionStorage].forEach(st => {
+                    try { Object.keys(st).filter(k => siteKey.test(k)).forEach(k => st.removeItem(k)); } catch (e) {}
+                });
+                try { localStorage.removeItem('gust:cookies:v1'); } catch (e) {}   // Tide's own engine's cookies
+                const drop = name => new Promise(ok => {
+                    try { const r = indexedDB.deleteDatabase(name); r.onsuccess = r.onerror = r.onblocked = () => ok(); } catch (e) { ok(); }
+                    setTimeout(ok, 1500);
+                });
+                // the fast engine's cookies, and Tide's own engine's page cache
+                return Promise.all([drop('__scramjet_controller'), drop(_IDB_PFX + 'TideCache')]);
             })();
 
             let lastWorkingWisp = (function () { try { return ls.getItem('gust:wisp:last-working:v1'); } catch { return null; } })();
@@ -19642,6 +19660,7 @@ _VIEWER_DL_JS +
             recentSites = recentSites.map(e => typeof e === 'string' ? { url: e, time: Date.now() } : e);
 
             function addRecentSite(url) {
+                if (TIDE.fresh) return;
                 if (!url || url === HOME_INTERNAL || url.startsWith('tide://') || isSettingsPage(url)) return;
                 // Remove existing entry for same URL so it moves to top
                 recentSites = recentSites.filter(e => e.url !== url);
@@ -20310,6 +20329,8 @@ _VIEWER_DL_JS +
                     // a site asked for in #tide= (Chalk TV, Chalk Browser ?url=) is the only page opened
                     if (TIDE.open) {
                         go(TIDE.open);
+                    } else if (TIDE.fresh) {
+                        // starting clean: the page around Tide says where to go
                     } else if (tabsLoaded) {
                         const activeTab = getActiveTab();
                         if (activeTab && activeTab.url !== HOME_INTERNAL && !isSettingsPage(activeTab.url)) {
@@ -20323,6 +20344,8 @@ _VIEWER_DL_JS +
                     } else {
                         go(urlInput.value);
                     }
+                    // the page around Tide may send {tide:"go"} from now on
+                    if (TIDE.ui && window.parent !== window) try { window.parent.postMessage({ tide: 'ready' }, '*'); } catch (e) {}
                 } catch (e) {
                     log("Init failed: " + e.message, "err");
                     showOverlay("Error: " + e.message);
@@ -22455,6 +22478,7 @@ _VIEWER_DL_JS +
                     await feLoadScript(FE_BASE + 'controller.api.js');
                     await feLoadScript(FE_BASE + 'libcurl-client.js');
                     if (!window.$scramjet || !window.$scramjetController || !window.LibcurlTransport) throw new Error('engine files did not load');
+                    await TIDE.wiped;
                     const ctl = new $scramjetController.Controller({
                         serviceworker: sw,
                         transport: new LibcurlTransport.LibcurlClient({ wisp: WISP }),
