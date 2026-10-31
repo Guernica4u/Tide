@@ -34,11 +34,30 @@ button{margin-top:16px;padding:10px 24px;background:#fff;color:#000;border:0;bor
 <div><h2>This opened in a new tab</h2><p>Pages opened through Tide only work inside Tide. Go back to that tab - this one can be closed.</p>
 <button onclick="window.close()">Close this tab</button></div>`;
 
+/* Scramjet's controller sends a request's body on as request.body, which
+   Firefox doesn't have: there every POST went out empty, so YouTube's video
+   requests failed (411) and many sites' forms and searches broke. In Firefox
+   the body is read first and handed over whole. */
+const NO_BODY_STREAM = !("body" in Request.prototype);
+async function routeWithBody(event) {
+  const req = event.request;
+  const body = await req.arrayBuffer();
+  const request = new Proxy(req, {
+    get(target, key) {
+      if (key === "body") return body.byteLength ? body : null;
+      const value = target[key];
+      return typeof value === "function" ? value.bind(target) : value;
+    }
+  });
+  return $scramjetController.route({ request, clientId: event.clientId, resultingClientId: event.resultingClientId });
+}
+
 addEventListener("fetch", event => {
   const req = event.request;
   if (req.mode === "navigate" && req.destination === "document" && new URL(req.url).pathname.startsWith(TIDE_GO))
     event.respondWith(new Response(ESCAPED, { headers: { "Content-Type": "text/html; charset=utf-8" } }));
-  else if ($scramjetController.shouldRoute(event)) event.respondWith($scramjetController.route(event));
+  else if ($scramjetController.shouldRoute(event))
+    event.respondWith(NO_BODY_STREAM && req.method !== "GET" && req.method !== "HEAD" ? routeWithBody(event) : $scramjetController.route(event));
   else if (new URL(event.request.url).pathname.startsWith(TIDE_GO)) event.respondWith(routeWhenReady(event));
 });
 
