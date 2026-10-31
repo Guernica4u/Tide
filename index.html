@@ -9732,7 +9732,8 @@ window._libcurlReady = true;
             // Chalk TV and Chalk Browser open Tide as  https://<tide>/#tide=<json>
             // with "open":"<site>" to show a site first and "ui":"tv" for Chalk TV
             // (one site: no tabs or address bar), and "fresh":true to start clean
-            // (see TIDE.wiped below). Tide always uses GUST's public
+            // (see TIDE.wiped below), and "relay":"wss://…" to use one of the public
+            // servers in WISP_POOL_DEFAULTS. Tide always uses GUST's public
             // relays; it never takes a private server or a key.
             window.__TIDE_SHELL__ = true; // frames inside Tide look for this to find it
             const TIDE = (function () {
@@ -9745,6 +9746,7 @@ window._libcurlReady = true;
                 if (!cfg) return t;
                 if (typeof cfg.open === 'string' && /^https?:\/\//i.test(cfg.open)) t.open = cfg.open;
                 if (cfg.fresh === true) t.fresh = true;
+                if (typeof cfg.relay === 'string' && cfg.relay.length < 200) t.relay = cfg.relay;
                 if (cfg.ui === 'tv') { t.ui = 'tv'; document.documentElement.classList.add('tide-tv'); }
                 return t;
             })();
@@ -9810,6 +9812,9 @@ window._libcurlReady = true;
                 "wss://anura.pro/",                    // 341ms
                 "wss://motor-cycle-part.org/wisp/"     // 368ms
             ])];
+            // a public server picked in Chalk TV is used for this visit only (not saved)
+            if (TIDE.relay && WISP_POOL_DEFAULTS.includes(TIDE.relay)) WISP = TIDE.relay;
+            else TIDE.relay = null;
             let wispHealth = (function () { try { return JSON.parse(ls.getItem('gust:wisp:health:v1') || '{}'); } catch { return {}; } })();
             function saveWispHealth() { try { ls.setItem('gust:wisp:health:v1', JSON.stringify(wispHealth)); } catch {} }
             // Per-(server,host) cooldown after a failure — session-only, not persisted.
@@ -20295,7 +20300,7 @@ _VIEWER_DL_JS +
                     // all at the same time (2.5 s at most), and use the fastest. No
                     // rotating between servers afterwards.
                     let _pinnedWisp = null;
-                    try { _pinnedWisp = ls.getItem('gust:wisp:v1'); } catch (e) {}
+                    try { _pinnedWisp = TIDE.relay || ls.getItem('gust:wisp:v1'); } catch (e) {}
                     if (!poolModeOn() && !_pinnedWisp && !TIDE.wisp && typeof curl !== 'undefined' && curl) {
                         try {
                             showBootBenchmark();
