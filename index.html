@@ -5797,18 +5797,25 @@
         #overlay .spinner { border-color: rgba(255, 255, 255, .12) !important; border-top-color: #fff !important; }
     </style>
     <style id="tide-look-css">
-        /* ChalkBored's theme on the Tide skin, when Chalk TV or Chalk Browser passes one in */
-        html.tide-mono[data-cb-look="night"] {
+        /* ChalkBored's colours (Settings > Skins > Colours): only colours, every skin keeps its layout */
+        .tide-colors { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tide-color { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 8px; cursor: pointer;
+            background: var(--bg2); color: var(--tx); border: 1px solid var(--bd); font: inherit; font-size: 13px; }
+        .tide-color i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--bd2); }
+        .tide-color.selected { border-color: var(--ac); box-shadow: 0 0 0 1px var(--ac); }
+        @keyframes tide-spin { to { transform: rotate(360deg); } }
+        .tide-spinning { display: inline-block; animation: tide-spin 0.8s linear infinite; }
+        html[data-cb-look="night"] {
             --bg0: #16181d; --bg1: #1f232a; --bg2: #262b33; --bg3: #2f3540; --bg-elevated: #1f232a;
             --bd: #2b3039; --bd2: #3a404b; --tx: #d9d5cc; --tx2: #b8b4ac; --tx3: #8b909a;
             --ac: #8fb3d9; --ac2: #b5cde6; --sk-bar: #1f232a; --sk-field: #2b3039;
         }
-        html.tide-mono[data-cb-look="mono"] {
+        html[data-cb-look="mono"] {
             --bg0: #0b0b0b; --bg1: #171717; --bg2: #1f1f1f; --bg3: #2a2a2a; --bg-elevated: #171717;
             --bd: #2e2e2e; --bd2: #444444; --tx: #f2f2f2; --tx2: #c8c8c8; --tx3: #9a9a9a;
             --ac: #f2f2f2; --ac2: #ffffff; --sk-bar: #121212; --sk-field: #1f1f1f;
         }
-        html.tide-mono[data-cb-look="space"] {
+        html[data-cb-look="space"] {
             --bg0: #0b0f1c; --bg1: #182030; --bg2: #1e2840; --bg3: #2a3450; --bg-elevated: #182030;
             --bd: #2a3350; --bd2: #3a4568; --tx: #e6e9f2; --tx2: #c4cbe0; --tx3: #a4adc4;
             --ac: #dbe3f6; --ac2: #ffffff; --sk-bar: #141b2e; --sk-field: #1e2740;
@@ -7003,6 +7010,19 @@
 
                             
                             <div class="settings-section" data-section="skins" style="display:none;">
+                                <div class="settings-card">
+                                    <div class="settings-card-head"><i class="fas fa-palette"></i> Colours</div>
+                                    <div class="settings-card-body">
+                                        <div class="settings-hint" style="margin-bottom:12px;">Only the colours change; the skin below keeps its layout.</div>
+                                        <div class="tide-colors">
+                                            <button class="tide-color" data-colors="follow"><i style="background:linear-gradient(135deg,#0b0b0b 50%,#8fb3d9 50%)"></i>Follow ChalkBored</button>
+                                            <button class="tide-color" data-colors="mono"><i style="background:#121212"></i>Mono</button>
+                                            <button class="tide-color" data-colors="night"><i style="background:#8fb3d9"></i>Night</button>
+                                            <button class="tide-color" data-colors="space"><i style="background:#1e2840"></i>Space</button>
+                                            <button class="tide-color" data-colors="own"><i style="background:#2b2a33"></i>Skin's own</button>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="settings-card">
                                     <div class="settings-card-head"><i class="fas fa-mask"></i> Browser Skin</div>
                                     <div class="settings-card-body">
@@ -9763,9 +9783,20 @@ window._libcurlReady = true;
             // relays; it never takes a private server or a key.
             window.__TIDE_SHELL__ = true; // frames inside Tide look for this to find it
             // ChalkBored's theme, worn by the Tide skin (see tide-look-css); other skins keep their colours
+            // Settings > Skins > Colours: "follow" (the default) wears what Chalk TV or
+            // Chalk Browser passes in, "own" keeps the skin's colours
             const TIDE_LOOKS = { space: 1, night: 1, mono: 1 };
+            let tidePassedLook = '';
             function tideLook(look) {
-                if (TIDE_LOOKS[look]) document.documentElement.dataset.cbLook = look;
+                if (TIDE_LOOKS[look]) tidePassedLook = look;
+                tideApplyColors();
+            }
+            function tideApplyColors() {
+                const pick = ls.getItem('colors:v1') || 'follow';
+                const look = pick === 'follow' ? tidePassedLook : TIDE_LOOKS[pick] ? pick : '';
+                if (look) document.documentElement.dataset.cbLook = look;
+                else delete document.documentElement.dataset.cbLook;
+                document.querySelectorAll('.tide-color').forEach(b => b.classList.toggle('selected', b.dataset.colors === pick));
             }
             const TIDE = (function () {
                 const t = { open: null, ui: null };
@@ -19262,6 +19293,9 @@ _VIEWER_DL_JS +
                 window.open(a.href);
             }, true);
 
+            document.querySelectorAll('.tide-color').forEach(b => b.onclick = () => { ls.setItem('colors:v1', b.dataset.colors); tideApplyColors(); });
+            tideApplyColors();
+
             // ── Tide: commands from the ChalkBored page around Tide ──────────
             // Only the page directly around Tide, and only from ChalkBored, may
             // send these: {tide:"go", url}, {tide:"back"}, {tide:"reload"}.
@@ -20801,8 +20835,11 @@ _VIEWER_DL_JS +
                 paintServer();
                 const srvTest = $("tideSrvTest"), srvReconnect = $("tideSrvReconnect"), srvFastest = $("tideSrvFastest");
                 if (srvTest) srvTest.onclick = async () => {
+                    const icon = srvTest.querySelector('i');
+                    if (icon) icon.className = 'fas fa-circle-notch tide-spinning';
                     paintServer('Testing…');
                     const ms = await probeWispLatency(WISP, 6000);
+                    if (icon) icon.className = 'fas fa-stopwatch';
                     paintServer(ms == null ? 'No answer. Try another server below, or Use fastest.' : 'Answers in ' + Math.round(ms) + ' ms.');
                 };
                 if (srvReconnect) srvReconnect.onclick = async () => {
@@ -20811,8 +20848,12 @@ _VIEWER_DL_JS +
                     paintServer('Reconnected.');
                 };
                 if (srvFastest) srvFastest.onclick = async () => {
+                    const icon = srvFastest.querySelector('i');
+                    if (icon) icon.className = 'fas fa-circle-notch tide-spinning';
+                    srvFastest.disabled = true;
                     paintServer('Testing every server 3 times…');
-                    await benchmarkWispPool();
+                    try { await benchmarkWispPool((done, all) => paintServer('Testing every server 3 times… ' + done + ' of ' + all)); }
+                    finally { if (icon) icon.className = 'fas fa-bolt'; srvFastest.disabled = false; }
                     const best = getWispPool().filter(u => wispHealth[u] && wispHealth[u].healthy && wispHealth[u].latency != null)
                         .sort((a, b) => wispHealth[a].latency - wispHealth[b].latency)[0];
                     if (!best) { paintServer('No server answered. Check the internet connection.'); return; }
