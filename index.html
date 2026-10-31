@@ -9791,12 +9791,19 @@ window._libcurlReady = true;
                     try { Object.keys(st).filter(k => siteKey.test(k)).forEach(k => st.removeItem(k)); } catch (e) {}
                 });
                 try { localStorage.removeItem('gust:cookies:v1'); } catch (e) {}   // Tide's own engine's cookies
-                const drop = name => new Promise(ok => {
-                    try { const r = indexedDB.deleteDatabase(name); r.onsuccess = r.onerror = r.onblocked = () => ok(); } catch (e) { ok(); }
-                    setTimeout(ok, 1500);
-                });
-                // the fast engine's cookies, and Tide's own engine's page cache
-                return Promise.all([drop('__scramjet_controller'), drop(_IDB_PFX + 'TideCache')]);
+                // The fast engine keeps its cookies in "__scramjet_controller". Deleting it
+                // waits forever while another Tide (Chalk Browser) has it open, and the
+                // engine then never starts, so a fresh visit gets its own empty one instead
+                // and earlier fresh ones are cleared away.
+                const CTL_DB = '__scramjet_controller', FRESH_DB = CTL_DB + '_fresh_';
+                try {
+                    if (indexedDB.databases) indexedDB.databases().then(list => list.forEach(d => {
+                        if (d.name && d.name.startsWith(FRESH_DB)) indexedDB.deleteDatabase(d.name);
+                    })).catch(() => {});
+                    const open = indexedDB.open.bind(indexedDB), mine = FRESH_DB + Date.now().toString(36);
+                    indexedDB.open = (name, version) => open(name === CTL_DB ? mine : name, version);
+                } catch (e) {}
+                return Promise.resolve();
             })();
 
             let lastWorkingWisp = (function () { try { return ls.getItem('gust:wisp:last-working:v1'); } catch { return null; } })();
