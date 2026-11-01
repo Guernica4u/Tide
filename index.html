@@ -9938,6 +9938,26 @@ window._libcurlReady = true;
                 if (!samples.length) return { latency: null, healthy: false, samples: 0 };
                 return { latency: samples.reduce((a, b) => a + b, 0) / samples.length, healthy: true, samples: samples.length };
             }
+            // A server can answer the ping and still fail every site (libcurl error 35),
+            // so a server only counts as working once it has loaded a real page.
+            // shortcut: swaps Tide's own engine's server for a moment (the fast engine has its own); fine while tests are rare
+            async function wispLoadsPage(url) {
+                return (await wispLoadsPageOnce(url)) || (await wispLoadsPageOnce(url));   // one miss is often just a blip
+            }
+            function wispLoadsPageOnce(url, ms = 6000) {
+                return withWispSwapLock(async () => {
+                    let s;
+                    try {
+                        await libcurl.load_wasm();
+                        libcurl.set_websocket(url);
+                        s = new libcurl.HTTPSession();
+                        const r = await Promise.race([s.fetch('https://example.com/', { redirect: 'manual' }),
+                            new Promise((_, no) => setTimeout(() => no(new Error('timed out')), ms))]);
+                        return r.status > 0;
+                    } catch (e) { return false; }
+                    finally { try { s?.close(); } catch (e) {} try { libcurl.set_websocket(WISP); } catch (e) {} }
+                });
+            }
             let wispBenchmarking = false;
             let _wispBenchmarkPromise = null;
             // Returns the in-flight benchmark promise if one is already running, so the
@@ -9957,6 +9977,10 @@ window._libcurlReady = true;
                             if (typeof renderWispPoolList === 'function') renderWispPoolList();
                             if (typeof renderGXWispList === 'function') renderGXWispList();
                         }));
+                        for (const url of pool)
+                            if (wispHealth[url].healthy && !(await wispLoadsPage(url))) wispHealth[url].healthy = false;
+                        if (typeof renderWispPoolList === 'function') renderWispPoolList();
+                        if (typeof renderGXWispList === 'function') renderGXWispList();
                         saveWispHealth();
                     } finally {
                         wispBenchmarking = false;
@@ -20394,8 +20418,13 @@ _VIEWER_DL_JS +
                                 wispHealth[u] = { latency: ms, checkedAt: Date.now(), healthy: ms != null, samples: 1 };
                                 return [u, ms];
                             }));
+                            // the fastest server that also loads a real page
+                            let _best = null;
+                            for (const r of _res.filter(r => r[1] != null).sort((a, b) => a[1] - b[1])) {
+                                if (await wispLoadsPage(r[0])) { _best = r; break; }
+                                wispHealth[r[0]].healthy = false;
+                            }
                             saveWispHealth();
-                            const _best = _res.filter(r => r[1] != null).sort((a, b) => a[1] - b[1])[0];
                             if (_best && _best[0] !== WISP) {
                                 WISP = _best[0];
                                 libcurl.set_websocket(WISP);
