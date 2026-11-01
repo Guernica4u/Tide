@@ -5782,6 +5782,8 @@
         .settings-card:has(#settingsSpellSwitch), .settings-card:has(#faviconTideSwitch) { display: none !important; }
         /* one shield in the address bar (the green one), and no signing in */
         #skinShieldsBtn, #skinAvatarBtn { display: none !important; }
+        /* no "Search tabs" button */
+        #skinTabSearchBtn { display: none !important; }
         /* no extensions button, and no customise gear on the new tab page */
         html[data-skin] #extPuzzleBtn, html #extPuzzleBtn, #skinPuzzleBtn, #skinExtShieldBtn, .fntp-gear { display: none !important; }
         /* the new tab page: two hands reaching out, drawn in characters */
@@ -5789,6 +5791,11 @@
             background: #000 url("background.webp") center / cover no-repeat !important;
         }
         #newtab .fntp-bg, #newtab .nt-bg { display: none !important; }
+        /* inside another page (Chalk Browser, Chalk TV): no picture, just the theme's colour, a little see-through */
+        html.tide-framed:not(#x), html.tide-framed:not(#x) body, html.tide-framed:not(#x) .app, html.tide-framed:not(#x) main, html.tide-framed:not(#x) .view,
+        html.tide-framed #newtab, html.tide-framed #newtab .fntp, html.tide-framed #newtab .skin-ntp { background: transparent !important; }
+        html.tide-framed:not(#x) body { background: color-mix(in srgb, var(--bg0, #000) 88%, transparent) !important; }
+        html.tide-framed .view iframe { background: #fff; }   /* a site that sets no colour stays white, as in any browser */
     </style>
     <style id="tide-loading-css">
         /* the loading screen, at start-up while Tide reaches the servers and while a page loads: black and white */
@@ -9798,6 +9805,7 @@ window._libcurlReady = true;
                 else delete document.documentElement.dataset.cbLook;
                 document.querySelectorAll('.tide-color').forEach(b => b.classList.toggle('selected', b.dataset.colors === pick));
             }
+            if (window.top !== window.self) document.documentElement.classList.add('tide-framed');
             const TIDE = (function () {
                 const t = { open: null, ui: null };
                 const m = /[#&]tide=([^&]*)/.exec(location.hash);
