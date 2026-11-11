@@ -1,0 +1,9 @@
+// Cloudflare (Workers Builds) settings: Tide is one static page served as-is
+// from the repo root.
+{
+  "name": "tide",
+  "compatibility_date": "2026-10-19",
+  "assets": {
+    "directory": "."
+  }
+}
