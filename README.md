@@ -52,6 +52,11 @@ Once it can open sites, Tide posts `{tide: "ready"}` to its parent. It then take
 but only from ChalkBored's addresses (and `localhost` when Tide itself runs locally).
 `_headers` lets only ChalkBored frame Tide.
 
+## Download
+
+Each [release](https://github.com/Guernica4u/Tide/releases) has a zip of the whole
+site to put on your own static host.
+
 ## Running it
 
 Serve the folder from any static host (`wrangler.jsonc` does this on Cloudflare).
