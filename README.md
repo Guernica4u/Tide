@@ -23,9 +23,7 @@ GUST code left.
   **History** lists every page visited. Both are under the ⋮ menu, and both are
   kept only in this browser. Fresh visits keep neither.
 - **Reopen a closed tab** with Ctrl+Shift+T.
-- **Skins**: Tide (all black), Firefox (light) and Chrome (dark).
-- **Colours**: follow ChalkBored's look (Night, Mono, Space), pick one, or keep
-  the skin's own.
+- One look: all black.
 - **Servers**: Tide starts on last time's fastest server and checks it in the
   background. Settings tests every server: each is pinged 3 times and must reach a
   real site. You can also pin one server.
@@ -45,10 +43,9 @@ GUST code left.
 | `ui: "tv"` | Chalk TV: just the site, no tabs or bar, downloads dropped |
 | `fresh: true` | nothing from an earlier visit comes back (sites' storage and cookies, tabs) |
 | `relay` | one of Tide's public servers, for this visit only |
-| `look` | `night`, `mono` or `space` |
 
 Once it can open sites, Tide posts `{tide: "ready"}` to its parent. It then takes
-`{tide: "go", url}`, `{tide: "back"}`, `{tide: "reload"}` and `{tide: "look", look}`,
+`{tide: "go", url}`, `{tide: "back"}` and `{tide: "reload"}`,
 but only from ChalkBored's addresses (and `localhost` when Tide itself runs locally).
 `_headers` lets only ChalkBored frame Tide.
 

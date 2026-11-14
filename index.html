@@ -1,24 +1,18 @@
 <!doctype html>
-<html lang="en" data-skin="tide">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tide</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23121826'/%3E%3Cmask id='m'%3E%3Crect width='64' height='64' fill='%23fff'/%3E%3Ccircle cx='40' cy='24' r='20'/%3E%3C/mask%3E%3Ccircle cx='28' cy='34' r='22' fill='%23e6ebf5' mask='url(%23m)'/%3E%3Ccircle cx='48' cy='18' r='6' fill='%238fb3d9'/%3E%3C/svg%3E">
 <style>
-/* ---------- colours: each skin has its own; ChalkBored's looks (and Settings > Colours) replace them ---------- */
+/* ---------- colours: all black ---------- */
 :root {
   color-scheme: dark;
   --ui: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
   --bg0: #000000; --bg1: #000000; --bg2: #121212; --bg3: #1e1e1e;
   --bd: #1c1c1c; --bd2: #333333; --tx: #f2f2f2; --tx2: #bdbdbd; --tx3: #808080; --ac: #e8e8e8;
 }
-html[data-skin="firefox"] { color-scheme: light; --bg0: #e8e8ed; --bg1: #f9f9fb; --bg2: #f0f0f4; --bg3: #ffffff; --bd: #d7d7db; --bd2: #b1b1b9; --tx: #15141a; --tx2: #3a3944; --tx3: #6e6d7a; --ac: #0061e0; }
-html[data-skin="firefox"][data-look] { color-scheme: dark; }
-html[data-skin="chrome"]  { --bg0: #202124; --bg1: #35363a; --bg2: #202124; --bg3: #4a4c50; --bd: #3c4043; --bd2: #5f6368; --tx: #e8eaed; --tx2: #bdc1c6; --tx3: #9aa0a6; --ac: #8ab4f8; }
-html[data-look="night"] { --bg0: #16181d; --bg1: #1f232a; --bg2: #262b33; --bg3: #2f3540; --bd: #2b3039; --bd2: #3a404b; --tx: #d9d5cc; --tx2: #b8b4ac; --tx3: #8b909a; --ac: #8fb3d9; }
-html[data-look="mono"]  { --bg0: #0b0b0b; --bg1: #171717; --bg2: #1f1f1f; --bg3: #2a2a2a; --bd: #2e2e2e; --bd2: #444444; --tx: #f2f2f2; --tx2: #c8c8c8; --tx3: #9a9a9a; --ac: #f2f2f2; }
-html[data-look="space"] { --bg0: #0b0f1c; --bg1: #182030; --bg2: #1e2840; --bg3: #2a3450; --bd: #2a3350; --bd2: #3a4568; --tx: #e6e9f2; --tx2: #c4cbe0; --tx3: #a4adc4; --ac: #dbe3f6; }
 
 /* ---------- layout ---------- */
 * { box-sizing: border-box; }
@@ -113,10 +107,6 @@ html.framed #loader { background: color-mix(in srgb, var(--bg0) 88%, transparent
 .side header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .side h2 { margin: 0; font-size: 18px; }
 #settings h3 { margin: 22px 0 10px; font-size: 12px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--tx3); }
-.choices { display: flex; flex-wrap: wrap; gap: 8px; }
-.choice { padding: 7px 12px; border-radius: 8px; border: 1px solid var(--bd); background: var(--bg2); color: var(--tx); cursor: pointer; display: flex; align-items: center; gap: 8px; }
-.choice.on { border-color: var(--ac); box-shadow: 0 0 0 1px var(--ac); }
-.choice i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--bd2); }
 .servers { display: flex; flex-direction: column; gap: 6px; }
 .server { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--bd); background: var(--bg2); color: var(--tx); cursor: pointer; text-align: left; }
 .server.on { border-color: var(--ac); }
@@ -158,27 +148,10 @@ html.framed #loader { background: color-mix(in srgb, var(--bg0) 88%, transparent
 #marks button:hover, #marks button:focus-visible { transform: translateY(-3px); outline: 2px solid var(--ac); outline-offset: 2px; }
 select { padding: 7px 10px; border-radius: 8px; background: var(--bg2); color: var(--tx); border: 1px solid var(--bd); font: inherit; }
 
-/* ---------- skins: the same pieces, shaped like other browsers ---------- */
-html[data-skin="tide"] #tabbar { padding-bottom: 6px; background: var(--bg1); }
-html[data-skin="tide"] .tab { height: 32px; border-radius: 9px; }
-html[data-skin="tide"] .tab.active { background: var(--bg2); }
-html[data-skin="tide"] #navbar { padding-top: 0; }
-html[data-skin="firefox"] #tabbar { padding: 4px 6px; }
-html[data-skin="firefox"] .tab { height: 34px; border-radius: 4px; }
-html[data-skin="firefox"] .tab.active { background: var(--bg3); box-shadow: 0 0 0 1px var(--bd), 0 1px 4px rgba(0,0,0,.18); }
-html[data-skin="firefox"] .tab .icon { background: none; }
-html[data-skin="firefox"] #navbar { border-bottom-color: var(--bd); }
-html[data-skin="firefox"] #addr { border-radius: 4px; height: 32px; }
-html[data-skin="firefox"] #addr:focus-within { box-shadow: 0 0 0 2px color-mix(in srgb, var(--ac) 35%, transparent); }
-html[data-skin="firefox"] #home-search { border-radius: 8px; }
-html[data-skin="chrome"] #tabbar { padding: 8px 10px 0; }
-html[data-skin="chrome"] .tab { height: 34px; border-radius: 10px 10px 0 0; }
-html[data-skin="chrome"] .tab .icon { background: none; }
-html[data-skin="chrome"] #addr { border-radius: 17px; }
-html[data-skin="chrome"] .tab:not(.active) + .tab:not(.active)::before { content: ""; position: absolute; margin-left: -14px; width: 1px; height: 18px; background: var(--bd2); }
-html[data-skin="chrome"] .tab { position: relative; }
-html[data-skin="chrome"] #navbar { border-bottom: 0; }
-html[data-skin="chrome"] #addr { background: var(--bg0); }
+#tabbar { padding-bottom: 6px; background: var(--bg1); }
+.tab { height: 32px; border-radius: 9px; }
+.tab.active { background: var(--bg2); }
+#navbar { padding-top: 0; }
 
 /* Chalk TV: just the site, Chalk TV has its own bar */
 html.tv #tabbar, html.tv #navbar, html.tv #home { display: none !important; }
@@ -254,10 +227,6 @@ html.tv #tabbar, html.tv #navbar, html.tv #home { display: none !important; }
 <div id="settings" class="side" hidden>
   <div class="panel" role="dialog" aria-label="Settings">
     <header><h2>Settings</h2><button class="nav-btn" id="settings-close" aria-label="Close settings"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
-    <h3>Skin</h3>
-    <div class="choices" id="skins"></div>
-    <h3>Colours</h3>
-    <div class="choices" id="colors"></div>
     <h3>Search with</h3>
     <select id="engine" aria-label="Search engine"></select>
     <h3>Server</h3>
@@ -290,14 +259,12 @@ const ENGINES = {
   ddg: ['DuckDuckGo', 'https://duckduckgo.com/?q='], google: ['Google', 'https://www.google.com/search?q='],
   bing: ['Bing', 'https://www.bing.com/search?q='], brave: ['Brave Search', 'https://search.brave.com/search?q=']
 };
-const SKINS = { tide: 'Tide', firefox: 'Firefox', chrome: 'Chrome' };
-const LOOKS = { night: ['Night', '#16181d'], mono: ['Mono', '#0b0b0b'], space: ['Space', '#0b0f1c'] };
 
 /* ---- #tide={...}: how the page around Tide wants it.
    open: a site to show first · ui:"tv": Chalk TV, just the site · fresh: nothing from an
-   earlier visit comes back · relay: one of SERVERS for this visit · look: ChalkBored's colours */
+   earlier visit comes back · relay: one of SERVERS for this visit */
 const CFG = (() => {
-  const c = { open: null, tv: false, fresh: false, relay: null, look: null };
+  const c = { open: null, tv: false, fresh: false, relay: null };
   const m = /[#&]tide=([^&]*)/.exec(location.hash);
   if (!m) return c;
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
@@ -307,7 +274,6 @@ const CFG = (() => {
   c.tv = j.ui === 'tv';
   c.fresh = j.fresh === true;
   if (SERVERS.includes(j.relay)) c.relay = j.relay;
-  if (typeof j.look === 'string' && LOOKS[j.look]) c.look = j.look;
   return c;
 })();
 if (CFG.tv) html.classList.add('tv');
@@ -331,18 +297,6 @@ if (CFG.fresh) {
   } catch (e) {}
 }
 
-/* ---- look: skin (shape) and colours ---- */
-let passedLook = CFG.look;
-function applyLook() {
-  const skin = SKINS[store.get('skin')] ? store.get('skin') : 'tide';
-  html.dataset.skin = skin;
-  const pick = store.get('colors', 'follow');
-  const look = pick === 'follow' ? passedLook : LOOKS[pick] ? pick : null;
-  if (look) html.dataset.look = look; else delete html.dataset.look;
-  document.querySelectorAll('#skins .choice').forEach(b => b.classList.toggle('on', b.dataset.v === skin));
-  document.querySelectorAll('#colors .choice').forEach(b => b.classList.toggle('on', b.dataset.v === pick));
-}
-applyLook();
 
 /* ---- servers ---- */
 function ping(url, ms = 2500) {
@@ -826,20 +780,6 @@ $('lists-close').onclick = closeLists;
 $('lists').addEventListener('click', e => { if (e.target === $('lists')) closeLists(); });
 $('clear-history').onclick = () => { visits = []; store.set('history', null); openList('history'); };
 renderMarks();
-function choices(box, list, onPick) {
-  for (const [v, label, swatch] of list) {
-    const b = document.createElement('button');
-    b.className = 'choice'; b.dataset.v = v;
-    if (swatch) { const i = document.createElement('i'); i.style.background = swatch; b.appendChild(i); }
-    b.append(label);
-    b.onclick = () => onPick(v);
-    box.appendChild(b);
-  }
-}
-choices($('skins'), Object.entries(SKINS), v => { store.set('skin', v); applyLook(); });
-choices($('colors'), [['follow', 'Follow ChalkBored'], ...Object.entries(LOOKS).map(([k, [n, c]]) => [k, n, c]), ['own', "Skin's own"]],
-  v => { store.set('colors', v); applyLook(); });
-applyLook();
 for (const [k, [name]] of Object.entries(ENGINES)) $('engine').add(new Option(name, k));
 $('engine').value = ENGINES[store.get('engine')] ? store.get('engine') : 'ddg';
 $('engine').onchange = () => store.set('engine', $('engine').value);
@@ -897,7 +837,6 @@ window.addEventListener('message', e => {
   if (d.tide === 'go' && typeof d.url === 'string' && /^https?:\/\//i.test(d.url)) open(active, d.url);
   else if (d.tide === 'back') $('back').click();
   else if (d.tide === 'reload') $('reload').click();
-  else if (d.tide === 'look' && (d.look === null || LOOKS[d.look])) { passedLook = d.look; applyLook(); }
 });
 
 /* ---- start ---- */
