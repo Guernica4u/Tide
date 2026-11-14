@@ -143,6 +143,10 @@ html.framed #loader { background: color-mix(in srgb, var(--bg0) 88%, transparent
 #menu button { display: flex; width: 100%; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-radius: 7px; background: none; color: var(--tx); cursor: pointer; text-align: left; }
 #menu button:hover, #menu button:focus-visible { background: var(--bg3); outline: none; }
 #menu kbd { margin-left: auto; font: 11px var(--ui); color: var(--tx3); }
+#menu .zoom { display: flex; align-items: center; gap: 4px; padding: 4px 6px 4px 10px; }
+#menu .zoom span:first-child { flex: 1; }
+#menu .zoom button { width: 28px; padding: 4px 0; justify-content: center; }
+#zoom-pct { min-width: 44px; text-align: center; color: var(--tx2); }
 #star { flex: none; width: 26px; height: 26px; border: 0; border-radius: 6px; background: none; color: var(--tx3); cursor: pointer; display: grid; place-items: center; }
 #star:hover { color: var(--tx); }
 #star.on { color: var(--ac); }
@@ -233,6 +237,7 @@ html.tv #tabbar, html.tv #navbar, html.tv #home { display: none !important; }
 <div id="menu" role="menu" hidden>
   <button role="menuitem" data-do="newtab">New tab <kbd>Ctrl+T</kbd></button>
   <button role="menuitem" data-do="reopen">Reopen closed tab <kbd>Ctrl+Shift+T</kbd></button>
+  <div class="zoom"><span>Zoom</span><button data-do="zoom-out" aria-label="Zoom out">−</button><span id="zoom-pct">100%</span><button data-do="zoom-in" aria-label="Zoom in">+</button></div>
   <button role="menuitem" data-do="bookmarks">Bookmarks</button>
   <button role="menuitem" data-do="history">History</button>
   <button role="menuitem" data-do="settings">Settings</button>
@@ -696,6 +701,9 @@ document.addEventListener('keydown', e => {
   else if (k === 'w') { e.preventDefault(); closeTab(active); }
   else if (k === 'l') { e.preventDefault(); $('url').focus(); }
   else if (k === 'd') { e.preventDefault(); toggleMark(); }
+  else if (e.key === '=' || e.key === '+') { e.preventDefault(); zoomStep(1); }
+  else if (e.key === '-') { e.preventDefault(); zoomStep(-1); }
+  else if (e.key === '0') { e.preventDefault(); zoomStep(0); }
   else if (e.key === 'Tab' && tabs.length > 1) { e.preventDefault(); showTab(tabs[(tabs.indexOf(active) + (e.shiftKey ? tabs.length - 1 : 1)) % tabs.length]); }
 });
 function tick() {
@@ -727,11 +735,26 @@ $('menu').onclick = e => {
   if (!b) return;
   $('menu').hidden = true;
   const d = b.dataset.do;
+  if (d === 'zoom-in' || d === 'zoom-out') { $('menu').hidden = false; zoomStep(d === 'zoom-in' ? 1 : -1); return; }
   if (d === 'newtab') newTab();
   else if (d === 'reopen') reopen();
   else if (d === 'bookmarks' || d === 'history') openList(d);
   else if (d === 'settings') { $('settings').hidden = false; renderServers(); }
 };
+/* ---- zoom: one level for every site, put on each site's page (and again after it navigates) ---- */
+const ZOOMS = [25, 33, 50, 67, 75, 80, 90, 100, 110, 125, 150, 175, 200, 250, 300];
+let zoom = 100;
+function applyZoom() {
+  const z = zoom === 100 ? '' : String(zoom / 100);
+  for (const t of tabs) { try { const r = t.frame.element.contentDocument.documentElement; if (r.style.zoom !== z) r.style.zoom = z; } catch (e) {} }
+  $('zoom-pct').textContent = zoom + '%';
+}
+function zoomStep(dir) {
+  if (dir === 0) zoom = 100;
+  else zoom = ZOOMS[Math.max(0, Math.min(ZOOMS.length - 1, (ZOOMS.indexOf(zoom) < 0 ? 7 : ZOOMS.indexOf(zoom)) + dir))];
+  applyZoom();
+}
+setInterval(applyZoom, 700);
 function reopen() { if (closed.length) newTab(closed.pop()); }
 
 /* ---- bookmarks and history (kept in this browser only; nothing is kept in fresh visits) ---- */
