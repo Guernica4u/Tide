@@ -10,7 +10,7 @@ Live at **https://tide.guernica4u.workers.dev**. ChalkBored's Chalk TV loads it
 there; Chalk Browser loads ChalkBored's own copy in `tide/`.
 
 Tide began as a fork of [GUST](https://github.com/nautilus-os/GUST) by Nautilus
-Labs. Since Tide 33 it is its own small page (`index.html`, about 40 KB) and has no
+Labs. Since Tide 33 it is its own small page (`index.html` and its code in `app.js`) and has no
 GUST code left.
 
 ## What it does
