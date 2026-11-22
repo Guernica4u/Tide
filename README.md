@@ -6,8 +6,8 @@ the engine in `engine/` (see `engine/README.md`). It sends sites over a
 [Wisp](https://github.com/MercuryWorkshop/wisp-protocol) connection through one of a
 few public servers.
 
-Live at **https://tide.guernica4u.workers.dev**. ChalkBored's Chalk TV loads it
-there; Chalk Browser loads ChalkBored's own copy in `tide/`.
+Live at **https://tide.guernica4u.workers.dev**. ChalkBored's Chalk TV and Chalk
+Browser load ChalkBored's own copy in `tide/`.
 
 Tide began as a fork of [GUST](https://github.com/nautilus-os/GUST) by Nautilus
 Labs. Since Tide 33 it is its own small page (`index.html` and its code in `app.js`) and has no
