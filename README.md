@@ -45,8 +45,10 @@ GUST code left.
 | `relay` | one of Tide's public servers, for this visit only |
 
 Once it can open sites, Tide posts `{tide: "ready"}` to its parent. It then takes
-`{tide: "go", url}`, `{tide: "back"}` and `{tide: "reload"}`,
-but only from ChalkBored's addresses (and `localhost` when Tide itself runs locally).
+`{tide: "go", url}`, `{tide: "back"}`, `{tide: "reload"}`, `{tide: "stop"}` (closes
+the site, freeing its memory) and `{tide: "fetch", id, url}` (one GET through Tide's
+server, answered with `{tide: "fetched", id, status, type, body}`, `body` an
+ArrayBuffer), but only from ChalkBored's addresses (and `localhost` when Tide itself runs locally).
 `_headers` lets only ChalkBored frame Tide.
 
 ## Download
